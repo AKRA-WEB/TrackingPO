@@ -59,10 +59,29 @@
         throw lastError || new Error('PO API unavailable');
     }
 
+    let catalog = null;
+    function getCatalog(data, token) {
+        if (!token) return Promise.reject(new Error('กรุณาเข้าสู่ระบบใหม่'));
+        if (!catalog || catalog.token !== token || (data && data.bypassCache)) {
+            catalog = { token, value: null, expires: 0, pending: null };
+        }
+        const entry = catalog;
+        if (entry.value && Date.now() < entry.expires) return Promise.resolve(entry.value);
+        if (entry.pending) return entry.pending;
+        entry.pending = request('getProducts', data || {}, token).then(result => {
+            if (result.success !== false) {
+                entry.value = result;
+                entry.expires = Date.now() + 5 * 60 * 1000;
+            }
+            return result;
+        }).finally(() => { entry.pending = null; });
+        return entry.pending;
+    }
+
     return {
         request,
         getInitialData: (options, token) => request('getInitialData', options, token),
-        getProducts: (data, token) => request('getProducts', data, token),
+        getProducts: (data, token) => getCatalog(data, token),
         getDeliveryInsights: (data, token) => request('getDeliveryInsights', data, token),
         saveDirectPO: (poData, token) => request('createPO', poData, token),
         createPO: (poData, token) => request('createPO', poData, token),
@@ -73,13 +92,14 @@
         rejectPR: (payload, token) => request('rejectPR', payload, token),
         closePO: (payload, token) => request('closePO', payload, token),
         searchProducts: async (query, limit = 30, token) => {
-            const res = await request('getProducts', {}, token);
+            const res = await getCatalog({}, token);
             const prods = (res && res.data && res.data.products) || (res && res.products) || [];
             if (!prods.length) return [];
-            const q = (query || '').toLowerCase().trim();
-            if (!q) return prods.slice(0, limit);
+            const tokens = (query || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+            if (!tokens.length) return prods.slice(0, limit);
             return prods
-                .filter(p => (p.name && p.name.toLowerCase().includes(q)) || (p.sku && p.sku.toLowerCase().includes(q)) || (p.subname && p.subname.toLowerCase().includes(q)) || (p.unit && p.unit.toLowerCase().includes(q)))
+                .filter(p => tokens.every(token => [p.name || p.product_name, p.sku, p.subname, p.unit, p.last_vendor || p.vendor || p.default_vendor]
+                    .some(value => String(value || '').toLowerCase().includes(token))))
                 .slice(0, limit);
         },
         API_URL

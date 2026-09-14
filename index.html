@@ -917,7 +917,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260914.02";
+    const CURRENT_VERSION = "20260914.03";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1958,8 +1958,11 @@
         const suggestionBox = (inputEl.parentElement && inputEl.parentElement.querySelector('.suggestion-box')) || inputEl.nextElementSibling?.nextElementSibling || null;
         if (!suggestionBox) return;
         let debounceTimer = null;
+        let searchGeneration = 0;
+        let blurTimer = null;
 
-        async function doSearch(val) {
+        async function doSearch(val, generation) {
+            const searchToken = getSessionToken();
             suggestionBox.innerHTML = "";
             let filtered = [];
             const tokens = val.toLowerCase().split(/\s+/).filter(Boolean);
@@ -1981,14 +1984,15 @@
             }
 
             // 2. If nothing found or catalog not yet fully loaded, query Supabase live
-            if (filtered.length === 0 && typeof window !== "undefined" && window.AkraSupabasePO) {
+            if (filtered.length === 0 && !poProductsLoaded && typeof window !== "undefined" && window.AkraSupabasePO) {
                 try {
-                    filtered = await AkraSupabasePO.searchProducts(val, 30, getSessionToken());
+                    filtered = await AkraSupabasePO.searchProducts(val, 30, searchToken);
                 } catch(e) {
                     console.warn('Live search error:', e);
                 }
             }
 
+            if (generation !== searchGeneration || searchToken !== getSessionToken()) return;
             if (!filtered || filtered.length === 0) {
                 suggestionBox.classList.add("hidden");
                 return;
@@ -2042,19 +2046,25 @@
 
         inputEl.addEventListener("input", function() {
             clearTimeout(debounceTimer);
+            const generation = ++searchGeneration;
             const val = this.value.trim().toLowerCase();
             if (!val) {
                 suggestionBox.innerHTML = "";
                 suggestionBox.classList.add("hidden");
                 return;
             }
-            debounceTimer = setTimeout(() => doSearch(val), 80);
+            debounceTimer = setTimeout(() => doSearch(val, generation), 80);
         });
 
-        inputEl.addEventListener("blur", () => setTimeout(() => suggestionBox.classList.add("hidden"), 200));
+        inputEl.addEventListener("blur", () => {
+            clearTimeout(debounceTimer);
+            searchGeneration += 1;
+            blurTimer = setTimeout(() => suggestionBox.classList.add("hidden"), 200);
+        });
         inputEl.addEventListener("focus", function() {
+            clearTimeout(blurTimer);
             const val = this.value.trim().toLowerCase();
-            if (val) doSearch(val);
+            if (val) doSearch(val, ++searchGeneration);
         });
     }
 
