@@ -21,6 +21,7 @@
     #po-container .po-card-details { min-width: 0; overflow-wrap: anywhere; }
     #po-container .po-card-footer { flex-wrap: wrap; gap: 8px; }
     #po-container .po-card-actions { flex-shrink: 0; margin-left: auto; white-space: nowrap; }
+    #po-container .po-card-actions > button.hidden { display: none; }
 
     @media (max-width: 1023px) {
       #modal-create-po .suggestion-box > li { flex-direction: column; align-items: stretch; }
@@ -584,26 +585,40 @@
       #app-content > nav > div > div { height: 64px; }
       #app-content > nav h1 { font-size: 14px; }
       #app-content > nav .bg-white\\/10,
-      #app-content > nav #logout-btn { min-height: 34px; padding: 0 8px; font-size: 10px; }
+      #app-content > nav #logout-btn { min-height: 44px; padding: 0 8px; font-size: 10px; }
+      #app-content > nav button { min-width: 44px; min-height: 44px; }
+      #app-content > nav > div > div { gap: 8px; }
+      #app-content > nav > div > div > div { gap: 6px; min-width: 0; }
+      #app-content > nav h1 { line-height: 1.3; }
       #app-content main > .bg-white > div { width: calc(100% - 24px); }
       #app-content .tab-btn { min-height: 55px; padding: 0 13px; font-size: 11px; }
       #app-content .tab-btn::after { right: 13px; left: 13px; }
-      #app-content main > div:last-child { width: calc(100% - 24px); padding-bottom: 48px; }
-      .po-overview { display: block; padding-top: 30px; }
-      .po-overview h2 { font-size: 35px; }
-      .po-overview p { font-size: 12px; }
-      .po-sync-card { display: inline-grid; min-width: 0; margin-top: 16px; }
+      #app-content main > div:last-child { width: calc(100% - 24px); padding-top: 0; padding-bottom: 48px; }
+      .po-overview { display: block; padding: 14px 0 10px; }
+      .po-overview .po-eyebrow { margin-bottom: 5px; font-size: 9px; }
+      .po-overview h2 { font-size: 24px; line-height: 1.2; }
+      .po-overview h2 br { display: none; }
+      .po-overview p { font-size: 11px; margin-top: 5px; }
+      .po-sync-card { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; margin-top: 7px; padding: 0; border: 0; background: none; box-shadow: none; }
+      .po-sync-card strong { font-size: 12px; letter-spacing: 0; }
       .po-metrics { gap: 7px; }
-      .po-metric, .po-metric--primary { grid-column: auto; min-height: 100px; padding: 13px; }
-      .po-metric strong { margin-top: 13px; font-size: 26px; }
+      .po-metric, .po-metric--primary { grid-column: auto; min-height: 0; padding: 6px 10px; }
+      .po-metric-top { gap: 5px; }
+      .po-metric-icon { width: 20px; height: 20px; border-radius: 5px; }
+      .po-metric strong { margin-top: 3px; font-size: 20px; }
+      .po-metric > span:last-child { margin-top: 3px; }
       #tab-po .po-command-grid { grid-template-columns: 1fr; gap: 7px; }
-      #tab-po .po-command-grid > button { min-height: 76px; padding: 12px; }
-      #tab-po .po-filter-grid { grid-template-columns: 1fr; gap: 8px; padding: 11px; }
+      #tab-po .po-command-grid > button { min-height: 44px; padding: 8px 10px; }
+      #tab-po .po-command-lead { gap: 8px; }
+      #tab-po .po-command-icon { width: 28px; height: 28px; }
+      #tab-po .po-filter-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px; margin-bottom: 12px; }
       #tab-po .po-filter-grid .btn-outline-action { width: 100%; }
-      #tab-po .po-queue-head { display: block; padding-top: 22px; }
+      #tab-po .po-queue-head { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px; }
       #tab-po .po-queue-head h2 { font-size: 20px; }
       #po-container { grid-template-columns: 1fr; gap: 7px; }
-      #po-container > div { min-height: 235px; padding: 14px !important; }
+      #po-container > div { min-height: 0; padding: 12px !important; }
+      #app-content .btn-outline-action { min-height: 44px; min-width: 44px; }
+      #app-content input, #app-content select, #app-content textarea { font-size: 16px; }
       #po-container .po-card-footer { align-items: stretch; }
       #po-container .po-card-footer > div:first-child { max-width: 48%; }
       #po-container .po-card-actions { flex-wrap: wrap; justify-content: flex-end; }
@@ -902,7 +917,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260914.01";
+    const CURRENT_VERSION = "20260914.02";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
