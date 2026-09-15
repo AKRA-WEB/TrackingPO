@@ -235,15 +235,6 @@
       gap: 28px;
       padding: 42px 0 24px;
     }
-    .po-eyebrow {
-      display: block;
-      margin-bottom: 10px;
-      color: var(--po-blue);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
     .po-overview h2 {
       margin: 0;
       color: var(--po-ink-strong);
@@ -259,19 +250,6 @@
       color: var(--po-muted);
       font-size: 13px;
     }
-    .po-sync-card {
-      display: grid;
-      gap: 4px;
-      min-width: 175px;
-      padding: 14px 16px;
-      border: 1px solid #dbe3f0;
-      border-radius: 12px;
-      background: linear-gradient(145deg, #f6f8ff, #fff);
-      box-shadow: var(--po-shadow-sm);
-    }
-    .po-sync-card small { color: var(--po-muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-    .po-sync-card strong { color: var(--po-blue); font-size: 28px; font-weight: 800; letter-spacing: -.08em; line-height: 1; }
-    .po-sync-card span { color: var(--po-muted-2); font-size: 10px; }
 
     .po-metrics {
       display: grid;
@@ -595,12 +573,9 @@
       #app-content .tab-btn::after { right: 13px; left: 13px; }
       #app-content main > div:last-child { width: calc(100% - 24px); padding-top: 0; padding-bottom: 48px; }
       .po-overview { display: block; padding: 14px 0 10px; }
-      .po-overview .po-eyebrow { margin-bottom: 5px; font-size: 9px; }
       .po-overview h2 { font-size: 24px; line-height: 1.2; }
       .po-overview h2 br { display: none; }
       .po-overview p { font-size: 11px; margin-top: 5px; }
-      .po-sync-card { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; margin-top: 7px; padding: 0; border: 0; background: none; box-shadow: none; }
-      .po-sync-card strong { font-size: 12px; letter-spacing: 0; }
       .po-metrics { gap: 7px; }
       .po-metric, .po-metric--primary { grid-column: auto; min-height: 0; padding: 6px 10px; }
       .po-metric-top { gap: 5px; }
@@ -643,6 +618,83 @@
       #toast-container .toast { min-width: 0; max-width: none; }
     }
   </style>
+  <style id="po-enterprise-ui">
+    /* Main-aligned shell; Direct PO command and modal retain their own styles. */
+    #app-content { padding-left: 240px; background: #f5f7fa; }
+    #app-content > nav { min-height: 76px; background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: none; color: #172033; }
+    #app-content > nav > div { width: calc(100% - 48px); }
+    #app-content > nav > div > div { height: 76px; }
+    #app-content > nav h1 { color: #172033; letter-spacing: -.02em; }
+    #app-content > nav span { color: #475569; }
+    #app-content > nav button:not(#logout-btn) { color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none; }
+    #app-content > nav #logout-btn { color: #b42335; background: #fff; border-color: #fecdd3; box-shadow: none; }
+    #app-content > nav button:hover { transform: none; background: #eef2ff; }
+    #app-content > nav .po-brand-icon { background: #2563eb; border-radius: 10px; }
+    #app-content main { background: #f5f7fa; }
+    #app-content main > .po-workflow-nav { position: fixed; inset: 0 auto 0 0; width: 240px; background: #0e1729; border: 0; box-shadow: none; backdrop-filter: none; padding: 100px 12px 24px; overflow-y: auto; }
+    #app-content main > .po-workflow-nav > div { width: 100%; display: flex; flex-direction: column; gap: 8px; overflow: visible; }
+    .po-rail-title { position: absolute; top: 26px; left: 24px; color: #fff; font-weight: 700; font-size: 18px; }
+    #app-content .tab-btn { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 12px; border: 0; border-radius: 9px; text-align: left; color: #cbd5e1; font-size: 13px; white-space: normal; gap: 6px; }
+    #app-content .tab-btn::after { display: none; }
+    #app-content .tab-btn:hover { color: #fff; background: #1c2b43; }
+    #app-content .tab-btn.active { color: #fff; background: #2563eb; }
+    #app-content .tab-btn span { flex-shrink: 0; }
+    #app-content main > div:last-child { width: calc(100% - 48px); max-width: 1440px; padding-bottom: 40px; }
+    #app-content main > div:last-child > section { padding-top: 28px; }
+    #app-content h2 { letter-spacing: -.02em; }
+    .po-overview { display: block; padding: 0 0 22px; }
+    .po-overview h2 { font-size: 26px; line-height: 1.4; }
+    .po-overview h2 br { display: none; }
+    .po-overview h2 span { color: inherit; }
+    .po-overview p { max-width: 75ch; margin-top: 6px; }
+    .po-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .po-metric, .po-metric--primary { grid-column: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: none; padding: 18px; }
+    .po-metric:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
+    .po-metric strong { font-size: 28px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .po-metric small { font-size: 12px; }
+    .po-metric > span:last-child { font-size: 11px; font-weight: 400; }
+    #tab-po .po-filter-grid { background: #fff; border-radius: 12px; margin-top: 16px; }
+    #tab-po .po-queue-head { margin-top: 26px; }
+    #po-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    #po-container > div, #pr-container > div, #match-container > div, #apv-container > div { border: 1px solid #e2e8f0 !important; border-radius: 12px; box-shadow: none; }
+    #po-container > div:hover { transform: none; box-shadow: none; }
+    #app-content main { scrollbar-color: #cbd5e1 #f5f7fa; }
+    #app-content main ::selection { background: #dbeafe; color: #172033; }
+    @media (max-width: 1100px) and (min-width: 769px) {
+      #app-content { padding-left: 220px; }
+      #app-content main > .po-workflow-nav { width: 220px; }
+      #app-content > nav .po-user { display: none; }
+      .po-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 768px) {
+      #app-content { padding-left: 0; }
+      #app-content > nav { min-height: 64px; }
+      #app-content > nav > div { width: calc(100% - 24px); }
+      #app-content > nav > div > div { height: 64px; }
+      #app-content > nav h1 { font-size: 14px; }
+      #app-content > nav .po-user { display: none; }
+      #app-content main > .po-workflow-nav { position: static; width: 100%; padding: 12px; }
+      #app-content main > .po-workflow-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .po-rail-title { display: none; }
+      #app-content .tab-btn { min-height: 48px; padding: 10px 8px; font-size: 11px; }
+      #app-content main > div:last-child { width: calc(100% - 24px); }
+      #app-content main > div:last-child > section { padding-top: 20px; }
+      .po-overview { padding-bottom: 16px; }
+      .po-overview h2 { font-size: 22px; }
+      .po-overview p { font-size: 12px; }
+      .po-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+      .po-metric { padding: 12px; }
+      .po-metric strong { margin-top: 8px; font-size: 24px; }
+      #po-container { grid-template-columns: 1fr; gap: 12px; }
+    }
+    @media (max-width: 380px) {
+      #app-content > nav .po-brand-icon { display: none; }
+      #app-content > nav > div > div > div:last-child { gap: 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #app-content .tab-btn, .po-metric { transition: none; }
+    }
+  </style>
 </head>
 <body class="text-gray-800 antialiased h-screen flex flex-col loading-active">
 
@@ -667,13 +719,13 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
           <div class="flex justify-between items-center h-16">
             <div class="flex items-center gap-3">
-              <div class="bg-white/20 p-1.5 rounded-lg">
+              <div class="po-brand-icon bg-white/20 p-1.5 rounded-lg">
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-white"></i>
               </div>
               <h1 class="text-lg font-semibold tracking-wide">โหมดจัดซื้อ (PO)</h1>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-sm font-medium text-white/90 hidden sm:block">ผู้ใช้งาน: <span id="display-username">Admin</span></span>
+              <span class="po-user text-sm font-medium text-white/90 hidden sm:block">ผู้ใช้งาน: <span id="display-username">Admin</span></span>
               <button onclick="loadInitialData(true)" class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-sm transition">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเฟรช
               </button>
@@ -687,7 +739,8 @@
 
       <main class="flex-1 overflow-y-auto w-full max-w-7xl mx-auto bg-[#f8fafc]">
 
-        <div class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div class="po-workflow-nav bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm" role="navigation" aria-label="ขั้นตอนงานจัดซื้อ">
+            <span class="po-rail-title">ระบบจัดซื้อ &amp; APV</span>
             <div class="flex overflow-x-auto hide-scroll px-4 sm:px-6">
                 <button onclick="switchTab('tab-pr')" id="btn-tab-pr" class="tab-btn active">
                     1. คำขอสั่งซื้อ (PR) <span id="badge-pr" class="ml-1.5 bg-red-500 text-white py-0.5 px-2 rounded-full text-xs font-bold">0</span>
@@ -721,14 +774,8 @@
             <section id="tab-po" class="hidden">
                 <section class="po-overview" aria-label="ภาพรวมงานจัดซื้อ">
                     <div>
-                        <span class="po-eyebrow">PROCUREMENT CONTROL / LIVE QUEUE</span>
                         <h2>จัดการบิล<br><span>จัดซื้อ</span></h2>
                         <p>พื้นที่ทำงานสำหรับตรวจ PR, เปิด PO, ติดตามกำหนดส่ง และส่งต่อบิลที่กระทบยอดแล้วไปทำ APV ตามลำดับเดิม</p>
-                    </div>
-                    <div class="po-sync-card">
-                        <small>WORKSPACE</small>
-                        <strong>LIVE</strong>
-                        <span>ศูนย์ควบคุมการจัดซื้อ</span>
                     </div>
                 </section>
 
@@ -917,7 +964,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260914.03";
+    const CURRENT_VERSION = "20260915.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
