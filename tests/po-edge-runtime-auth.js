@@ -5,7 +5,10 @@ const vm = require('node:vm');
 
 console.log('=== Running Executable PO Edge Runtime Auth & Insights Tests ===\n');
 
-const poApiSource = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', 'po-api', 'index.ts'), 'utf8');
+const sharedJwtFullSource = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', '_shared', 'main-jwt.ts'), 'utf8')
+  .replace(/^export\s+/gm, '');
+const sharedJwtSource = sharedJwtFullSource.slice(0, sharedJwtFullSource.indexOf('async function verifyMainJwt'));
+const poApiSource = `${sharedJwtSource}\n${fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', 'po-api', 'index.ts'), 'utf8')}`;
 
 // Strip TypeScript types to execute in Node VM
 function transpileTsToJs(tsCode) {
@@ -77,6 +80,7 @@ function createEdgeRuntime(mockDbState = {}) {
         id: user.id,
         name: user.name || user.id,
         roles: user.roles,
+        apps: user.apps || [],
         perms: user.perms || null,
         tokenVersion: isLegacy ? 1 : 2,
         sessionVersion: isLegacy ? null : 1,
@@ -188,6 +192,7 @@ async function runTests() {
       id: 'admin_empty',
       name: 'Admin Empty Perms',
       roles: ['ADMIN', 'SUPERVISOR'],
+      apps: ['app-tracking'],
       perms: {
         'app-po': [] // explicit empty permission contract
       }
@@ -251,6 +256,7 @@ async function runTests() {
       id: 'readonly_usr',
       name: 'Read Only User',
       roles: ['USER'],
+      apps: ['app-tracking'],
       perms: {
         'app-po': ['read']
       }
@@ -313,7 +319,7 @@ async function runTests() {
     ];
 
     const runtime = createEdgeRuntime({ purchase_orders: mockPOs });
-    const authUser = { id: 'u1', roles: ['ADMIN'], perms: { 'app-po': ['read'] } };
+    const authUser = { id: 'u1', roles: ['ADMIN'], apps: ['app-tracking'], perms: { 'app-po': ['read'] } };
 
     const result = await runtime.handleRequest('getDeliveryInsights', {}, authUser);
     assert.equal(result.status, 200, 'getDeliveryInsights must return HTTP 200');
@@ -348,7 +354,7 @@ async function runTests() {
       vendors: [{ name: 'Vendor X' }],
       products: [{ id: 'prod-1', sku: 'SKU1', name: 'Product 1', is_active: true }]
     });
-    const authUser = { id: 'u1', roles: ['ADMIN'], perms: { 'app-po': ['read'] } };
+    const authUser = { id: 'u1', roles: ['ADMIN'], apps: ['app-tracking'], perms: { 'app-po': ['read'] } };
 
     // 5A: getInitialData returns both top-level and nested fields
     const initRes = await runtime.handleRequest('getInitialData', {}, authUser);
@@ -417,7 +423,7 @@ async function runTests() {
         receipts: []
       }]
     });
-    const authUser = { id: 'u1', roles: ['ADMIN'], perms: { 'app-po': ['read'] } };
+    const authUser = { id: 'u1', roles: ['ADMIN'], apps: ['app-tracking'], perms: { 'app-po': ['read'] } };
     const result = await runtime.handleRequest('getInitialData', { includeCompleted: true }, authUser);
     const decodedPurchaseOrderQueries = runtime.dbCalls.restQueries
       .filter(call => call.query.startsWith('purchase_orders?'))
@@ -438,7 +444,7 @@ async function runTests() {
   // 7. Expected RPC conflicts must be safe; unknown failures must not expose database details
   console.log('\nTest 7: Testing safe RPC error responses...');
   {
-    const authUser = { id: 'u1', roles: ['ADMIN'], perms: { 'app-po': ['closePO'] } };
+    const authUser = { id: 'u1', roles: ['ADMIN'], apps: ['app-tracking'], perms: { 'app-po': ['closePO'] } };
     const conflictRuntime = createEdgeRuntime({
       rpcError: 'matching_receipt_item_required_exactly_once:40000000-0000-0000-0000-00000000004a'
     });

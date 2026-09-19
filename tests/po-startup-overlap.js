@@ -10,11 +10,11 @@ const authStart = html.indexOf('init: async () =>');
 const authEnd = html.indexOf('\n        bindEvents:', authStart);
 const authSource = html.slice(authStart, authEnd);
 const prefetchStart = authSource.indexOf("initialDataPrefetch = readApiCall('getInitialData'");
-const verifyAwait = authSource.indexOf('const response = await fetch(verifyUrl)');
+const verifyAwait = authSource.indexOf("await window.AkraModule.verifySession('app-tracking')");
 
 assert(prefetchStart >= 0, 'AuthGuard must start the lean initial-data prefetch');
-assert(verifyAwait > prefetchStart, 'initial-data prefetch must start before token verification waits');
-assert(authSource.includes('appId=${encodeURIComponent(APP_CONFIG.APP_ID)}'), 'PO token verification must use the centrally managed app id');
+assert(verifyAwait >= 0 && verifyAwait < prefetchStart, 'current Main verification must precede embedded domain prefetch');
+assert(authSource.includes("verifySession('app-tracking', tokenToVerify)"), 'standalone PO must verify the same centrally managed app id');
 assert(!authSource.includes('roles=${encodeURIComponent(rolesParam)}'), 'PO token verification must not hardcode entry roles');
 
 const loadStart = html.indexOf('async function loadInitialData(');
@@ -23,4 +23,4 @@ const loadSource = html.slice(loadStart, loadEnd);
 assert(loadSource.includes('initialDataPrefetch') && loadSource.includes("readApiCall('getInitialData'"), 'loadInitialData must consume the auth-overlap prefetch');
 assert(loadSource.includes('scheduleProductsBackground()'), 'large product catalog should be idle-scheduled after active readiness');
 
-console.log('PASS po-startup-overlap: lean data overlaps auth and products are deferred');
+console.log('PASS po-startup-overlap: static verified-entry/deferred-products contract (behavior in Main purchasing-identity-state suite)');
