@@ -964,7 +964,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260919.02";
+    const CURRENT_VERSION = "20260920.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1527,6 +1527,13 @@
                 removeDeletedBillFromLocalData(payload);
                 hideDataLoading();
                 showNotification(result.message || 'ลบบิลเรียบร้อยแล้ว', 'success');
+                loadInitialDataInBackground(true);
+                return result;
+            } else if (action === "cancelUnreceivedPO") {
+                removeCache("CACHE_PO_ACTIVE_V3");
+                result = await AkraSupabasePO.cancelUnreceivedPO(payload, token);
+                hideDataLoading();
+                showNotification(result.message || 'ยกเลิกยอดที่ยังไม่ได้รับเรียบร้อยแล้ว', 'success');
                 loadInitialDataInBackground(true);
                 return result;
             } else if (action === "approvePR") {
@@ -2419,10 +2426,12 @@
               warehouse: po.warehouse,
               expectedDate: po.expectedDate || '',
               billRemark: po.billRemark || po.poRemark || '',
-              items: []
+              items: [],
+              poItemCount: Number(po.poItemCount || 0)
             };
             if (!groups[key].expectedDate && po.expectedDate) groups[key].expectedDate = po.expectedDate;
             if (!groups[key].billRemark && (po.billRemark || po.poRemark)) groups[key].billRemark = po.billRemark || po.poRemark;
+            groups[key].poItemCount = Math.max(groups[key].poItemCount || 0, Number(po.poItemCount || 0));
             groups[key].items.push(po);
           });
       }
@@ -2467,6 +2476,7 @@
             const hasCompletedSibling = group.items.some(i => i.billHasCompletedSibling === true);
             const receivingStarted = hasDraft || hasPendingReview || hasBillReceivingStarted;
             const editBlocked = receivingStarted || hasCompletedSibling;
+            const cancelableUnreceivedItems = group.items.filter(i => i.cancelableUnreceived === true);
 
             // เช็คว่าบิลนี้มาจากปุ่ม Direct PO หรือเปล่า
             const isDirectPO = isDirectBillRefUid(group.refPrUid) || group.items.some(i => isDirectBillRefUid(i.refPrUid) || (i.remark && i.remark.toString().includes('Direct PO')));
@@ -2522,6 +2532,16 @@
                         <button onclick='deletePO(${deleteRequest})' class="btn-outline-action btn-delete delete-lifecycle-active">
                             <i data-lucide="trash-2" class="w-3 h-3"></i> ลบทั้งบิล
                         </button>`;
+            const cancelRequest = esc(JSON.stringify({
+                poId: group.poId || group.items?.[0]?.poId || '',
+                poUids: cancelableUnreceivedItems.map(i => i.uid),
+                expectedItemCount: group.poItemCount || group.items.length,
+                expectedUnreceivedCount: cancelableUnreceivedItems.length
+            }));
+            const cancelUnreceivedButtonHtml = hasBillReceivingStarted && cancelableUnreceivedItems.length > 0 ? `
+                        <button onclick='cancelUnreceivedPO(${cancelRequest})' class="btn-outline-action border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100">
+                            <i data-lucide="ban" class="w-3 h-3"></i> ยกเลิกยอดคงเหลือ
+                        </button>` : '';
 
             const editRequest = esc(JSON.stringify(group.key || group.poId || group.refPrUid || group.items?.[0]?.uid || poBillGroupKey(group)));
             const editButtonHtml = `
@@ -2553,6 +2573,7 @@
                     </div>
                     <div class="po-card-actions flex gap-2">
                         ${editButtonHtml}
+                        ${cancelUnreceivedButtonHtml}
                         ${deleteButtonHtml}
                     </div>
                 </div>
@@ -2583,6 +2604,29 @@
                 await apiAction('deletePO', { poId, poUids, refPrUid, expectedItemCount, legacyBill });
             } finally {
                 deletePO.inFlight = false;
+            }
+        });
+    }
+
+    function cancelUnreceivedPO(request) {
+        if (!can('createPO')) { showNotification('ไม่มีสิทธิ์ยกเลิกยอดคงเหลือ', 'error'); return; }
+        if (cancelUnreceivedPO.inFlight) return;
+        const poUids = normalizeDeletePoUids(request && request.poUids);
+        const poId = request && request.poId ? String(request.poId).trim() : '';
+        const expectedItemCount = Number(request && request.expectedItemCount) || 0;
+        const expectedUnreceivedCount = Number(request && request.expectedUnreceivedCount) || poUids.length;
+        if (!poId || !poUids.length || expectedItemCount <= 0 || expectedUnreceivedCount !== poUids.length) {
+            showNotification('ข้อมูลบิลไม่เป็นปัจจุบัน กรุณารีเฟรชก่อนยกเลิกยอดคงเหลือ', 'error');
+            return;
+        }
+
+        showConfirmModal(`ยืนยันยกเลิกยอดที่ยังไม่ได้รับ ${poUids.length} รายการใช่หรือไม่?\n\nรายการที่รับเข้า GR แล้วจะไม่ถูกลบ`, async () => {
+            if (cancelUnreceivedPO.inFlight) return;
+            cancelUnreceivedPO.inFlight = true;
+            try {
+                await apiAction('cancelUnreceivedPO', { poId, poUids, expectedItemCount, expectedUnreceivedCount });
+            } finally {
+                cancelUnreceivedPO.inFlight = false;
             }
         });
     }

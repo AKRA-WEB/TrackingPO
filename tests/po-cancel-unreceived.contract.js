@@ -1,6 +1,9 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const clientPath = require('node:path').join(__dirname, '..', 'js', 'supabase-po-client.js');
+const clientPath = path.join(__dirname, '..', 'js', 'supabase-po-client.js');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 delete require.cache[require.resolve(clientPath)];
 
 const requests = [];
@@ -13,6 +16,10 @@ global.fetch = async (url, init) => {
 };
 
 (async () => {
+  assert.match(html, /function cancelUnreceivedPO\(request\)/, 'PO UI must expose remainder-cancellation confirmation flow');
+  assert.match(html, /cancelableUnreceivedItems/, 'PO UI must derive cancellation candidates from server-projected item state');
+  assert.match(html, /รายการที่รับเข้า GR แล้วจะไม่ถูกลบ/, 'PO confirmation must state that received GR items are preserved');
+
   const client = require(clientPath);
   assert.equal(typeof client.cancelUnreceivedPO, 'function', 'PO client must expose remainder-cancellation mutation');
 
