@@ -78,6 +78,7 @@ function createEdgeRuntime(mockDbState = {}) {
       const isLegacy = user.tokenVersion === 1 || (!hasAppPo && user.tokenVersion !== 2);
       return {
         id: user.id,
+        identityId: user.identityId,
         name: user.name || user.id,
         roles: user.roles,
         apps: user.apps || [],
@@ -116,7 +117,7 @@ function createEdgeRuntime(mockDbState = {}) {
         const rpcName = urlStr.split('/rpc/')[1].split('?')[0];
         const body = opts.body ? JSON.parse(opts.body) : {};
         dbCalls.rpcCalls.push({ rpc: rpcName, body });
-        if (mockDbState.rpcError) {
+        if (mockDbState.rpcError && (!mockDbState.rpcErrorRpc || mockDbState.rpcErrorRpc === rpcName)) {
           return {
             ok: false,
             status: 400,
@@ -205,6 +206,7 @@ async function runTests() {
       { action: 'createPO', data: { poNumber: 'PO-1' } },
       { action: 'updatePO', data: { refPrUid: 'PR-1' } },
       { action: 'deletePO', data: { poId: 'po-1' } },
+      { action: 'cancelUnreceivedPO', data: { poId: 'po-1', poUids: ['item-1'], expectedItemCount: 2, expectedUnreceivedCount: 1 } },
       { action: 'closePO', data: { poId: 'po-1' } }
     ];
 
@@ -438,6 +440,23 @@ async function runTests() {
     assert.equal(itemB.poNumber, 'PO-ITEM-B', 'Item B must use its matching receipt PO number');
     assert.equal(itemA.remark, 'Item-specific Match remark', 'Per-item Match remark must take precedence over the receipt header remark');
     assert.equal(result.body.grCompleted.some(item => item.uid === 'poi-missing-receipt'), false, 'Completed projection must omit an item without a matching receipt');
+
+    const partialCancelledRuntime = createEdgeRuntime({
+      purchase_orders: [{
+        id: 'po-partial-cancel',
+        po_number: 'PO-PARTIAL-CANCEL',
+        vendor_name: 'Vendor Partial Cancel',
+        status: 'Partial GR',
+        items: [
+          { id: 'poi-received', product_name: 'Received Item', po_qty: 1, status: 'GR Completed' },
+          { id: 'poi-cancelled', product_name: 'Cancelled Remainder', po_qty: 1, status: 'Cancelled' }
+        ],
+        receipts: [{ id: 'gr-partial-cancel', po_number: 'PO-PARTIAL-CANCEL', status: 'GR Completed', gr_items: [{ id: 'gri-received', po_item_id: 'poi-received', gr_qty: 1 }] }]
+      }]
+    });
+    const partialResult = await partialCancelledRuntime.handleRequest('getInitialData', { includeCompleted: true }, authUser);
+    assert.equal(partialResult.body.grCompleted.some(item => item.uid === 'poi-received'), true, 'Partial-cancelled PO must retain received item in completed projection');
+    assert.equal(partialResult.body.grCompleted.some(item => item.uid === 'poi-cancelled'), false, 'Cancelled remainder must not re-enter receiving or matching projections');
     console.log('  [PASS] Completed items retain distinct PO numbers from their matching receipts.');
   }
 
@@ -464,6 +483,21 @@ async function runTests() {
     assert.equal(unknownResult.status, 500, 'Unknown database failure must return HTTP 500');
     assert.equal(unknownResult.body.reason, 'server_error', 'Unknown database failure must use a generic reason');
     assert.equal(JSON.stringify(unknownResult.body).includes('sensitive internal database detail'), false, 'Unknown database failure must not expose internal details');
+
+    const cancelRuntime = createEdgeRuntime({
+      rpcError: 'cancel_received_item:10000000-0000-0000-0000-00000000000a',
+      rpcErrorRpc: 'po_cancel_unreceived_bound_v1'
+    });
+    const cancelUser = { id: 'u2', identityId: '20000000-0000-0000-0000-000000000002', roles: ['PURCHASER'], apps: ['app-tracking'], perms: { 'app-po': ['createPO'] } };
+    const cancelResult = await cancelRuntime.handleRequest('cancelUnreceivedPO', {
+      poId: '10000000-0000-0000-0000-000000000001',
+      poUids: ['10000000-0000-0000-0000-00000000000b'],
+      expectedItemCount: 2,
+      expectedUnreceivedCount: 1
+    }, cancelUser);
+    assert.equal(cancelResult.status, 409, 'Cancellation conflicts must return HTTP 409');
+    assert.equal(cancelResult.body.reason, 'cancel_received_item', 'Cancellation conflicts must expose a stable reason');
+    assert.ok(cancelRuntime.dbCalls.rpcCalls.some(call => call.rpc === 'po_cancel_unreceived_bound_v1'), 'Cancellation must use the bound PO RPC');
     console.log('  [PASS] RPC conflicts and unknown failures return safe public errors.');
   }
 
