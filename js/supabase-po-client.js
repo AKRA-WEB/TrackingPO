@@ -109,6 +109,7 @@
         updatePO: (poData, token) => request('updatePO', poData, token),
         deleteBill: (payload, token) => request('deleteBill', payload, token),
         deletePO: (payload, token) => request('deleteBill', payload, token),
+        cancelUnreceivedPO: (payload, token) => request('cancelUnreceivedPO', payload, token),
         approvePR: (payload, token) => request('approvePR', payload, token),
         rejectPR: (payload, token) => request('rejectPR', payload, token),
         closePO: (payload, token) => request('closePO', payload, token),

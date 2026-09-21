@@ -31,6 +31,7 @@ const requiredActions = [
   'updatePO',
   'deleteBill',
   'deletePO',
+  'cancelUnreceivedPO',
   'approvePR',
   'rejectPR',
   'closePO'
