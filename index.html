@@ -964,7 +964,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260920.01";
+    const CURRENT_VERSION = "20260922.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -2245,6 +2245,38 @@
     }
 
     let createPoItemRowCounter = 0;
+
+    function normalizeDirectPoDuplicateKey(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    }
+
+    function findDuplicateDirectPoItems(items) {
+        const seenNames = new Map();
+        const seenSkus = new Map();
+        const duplicates = [];
+
+        (items || []).forEach((item, index) => {
+            const product = String(item?.product || item?.productName || '').trim();
+            const nameKey = normalizeDirectPoDuplicateKey(product);
+            const skuKey = normalizeDirectPoDuplicateKey(item?.sku);
+            const duplicateNameIndex = nameKey ? seenNames.get(nameKey) : undefined;
+            const duplicateSkuIndex = skuKey ? seenSkus.get(skuKey) : undefined;
+
+            if (duplicateNameIndex !== undefined || duplicateSkuIndex !== undefined) {
+                duplicates.push({
+                    index,
+                    previousIndex: duplicateNameIndex !== undefined ? duplicateNameIndex : duplicateSkuIndex,
+                    product
+                });
+            }
+
+            if (nameKey && !seenNames.has(nameKey)) seenNames.set(nameKey, index);
+            if (skuKey && !seenSkus.has(skuKey)) seenSkus.set(skuKey, index);
+        });
+
+        return duplicates;
+    }
+
     function addCreatePoItemRow(product = '', qty = '', unit = '', sku = '', remark = '') {
         const container = document.getElementById('create-po-items-container');
         const div = document.createElement('div');
@@ -2308,6 +2340,15 @@
         });
 
         if(hasError || items.length === 0) return showNotification("กรุณากรอกข้อมูลสินค้าให้ครบถ้วน", "warning");
+
+        const duplicateItems = findDuplicateDirectPoItems(items);
+        if (duplicateItems.length > 0) {
+            const duplicateNames = [...new Set(duplicateItems.map(item => item.product).filter(Boolean))].join(', ');
+            const duplicateRows = document.querySelectorAll(".create-po-item-row");
+            const duplicateInput = duplicateRows[duplicateItems[0].index]?.querySelector(".c-product");
+            if (duplicateInput && typeof duplicateInput.focus === 'function') duplicateInput.focus();
+            return showNotification(`พบสินค้าซ้ำในบิล${duplicateNames ? `: ${duplicateNames}` : ''} กรุณารวมเป็นรายการเดียว`, "warning");
+        }
 
         const refPrRow = document.getElementById("c-ref-pr-row").value;
         const prUid = form.dataset.pruid || form.dataset.prUid;

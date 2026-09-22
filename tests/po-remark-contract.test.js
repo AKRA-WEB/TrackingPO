@@ -23,7 +23,7 @@ console.log('[PASS] 1. All inline scripts compile with 0 syntax errors');
 const versionMatch = html.match(/const CURRENT_VERSION = ["']([^"']+)["']/);
 assert(versionMatch, 'CURRENT_VERSION must be declared in index.html');
 assert.strictEqual(versionMatch[1], versionConfig.version, 'CURRENT_VERSION in index.html must match version.json');
-assert.strictEqual(versionMatch[1], '20260915.01', 'Version must be bumped to 20260915.01');
+assert.strictEqual(versionMatch[1], versionConfig.version, 'CURRENT_VERSION must match the release version in version.json');
 console.log(`[PASS] 2. Version parity verified: ${versionMatch[1]}`);
 
 // 3. Static HTML presence check
@@ -149,7 +149,8 @@ const context = vm.createContext({
   lucide: { createIcons: () => {} }
 });
 
-const scriptContent = inlineScripts[2][1];
+const scriptContent = inlineScripts.find((script) => script[1].trim())?.[1];
+assert(scriptContent, 'PO must expose a non-empty inline application script');
 vm.runInContext(scriptContent, context);
 
 // 5. Verify addCreatePoItemRow supports remark
