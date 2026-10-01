@@ -2,14 +2,14 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <script src="js/akra-shell-bridge.js?v=20260919.05"></script>
+    <script src="js/akra-shell-bridge.js?v=20261001.01"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดซื้อ & APV</title>
+  <title>BUYMORETH | จัดซื้อสินค้า</title>
 
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase-po-client.js?v=20260920.01" defer></script>
+  <script src="js/supabase-po-client.js?v=20261001.01" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -722,7 +722,7 @@
               <div class="po-brand-icon bg-white/20 p-1.5 rounded-lg">
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-white"></i>
               </div>
-              <h1 class="text-lg font-semibold tracking-wide">โหมดจัดซื้อ (PO)</h1>
+              <h1 class="text-lg font-semibold tracking-wide">จัดซื้อสินค้า</h1>
             </div>
             <div class="flex items-center gap-4">
               <span class="po-user text-sm font-medium text-white/90 hidden sm:block">ผู้ใช้งาน: <span id="display-username">Admin</span></span>
@@ -964,7 +964,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20260922.01";
+    const CURRENT_VERSION = "20261001.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1271,20 +1271,20 @@
             } catch (error) {
                 console.error("Auth Error:", error);
                 window.appSession = null;
-                UI.showError("ตรวจสอบสิทธิ์ไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่ผ่าน Main");
+                UI.showError("ตรวจสอบสิทธิ์ไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่ผ่าน BUYMORETH");
             }
         },
 
         bindEvents: () => {
             window.AkraModule?.watchSession?.({appId:'app-tracking', user:window.appSession, token:window.appSession?.token,
-                invalidated:() => { window.appSession = null; UI.showError('เซสชัน Main เปลี่ยนแล้ว กรุณาเปิดแอปจาก Main ใหม่'); },
+                invalidated:() => { window.appSession = null; UI.showError('เซสชัน BUYMORETH เปลี่ยนแล้ว กรุณาเปิดแอปจาก BUYMORETH ใหม่'); },
                 refreshed:token => { if (window.appSession) window.appSession.token = token; }
             });
             if (!window.AkraModule?.embedded) window.addEventListener('storage', event => {
                 if (event.key !== null && event.key !== APP_CONFIG.STORAGE_KEY) return;
                 if (event.key !== null && event.oldValue === event.newValue) return;
                 window.appSession = null;
-                UI.showError('บัญชีในแท็บอื่นเปลี่ยนแล้ว กรุณาเข้าสู่ระบบใหม่ผ่าน Main');
+                UI.showError('บัญชีในแท็บอื่นเปลี่ยนแล้ว กรุณาเข้าสู่ระบบใหม่ผ่าน BUYMORETH');
             });
             const logoutBtn = document.getElementById('logout-btn');
             if(logoutBtn) {
