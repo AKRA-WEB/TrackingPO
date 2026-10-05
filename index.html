@@ -964,7 +964,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261002.01";
+    const CURRENT_VERSION = "20261005.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1502,6 +1502,7 @@
                 return result;
             } else if (action === "updatePO") {
                 result = await AkraSupabasePO.updatePO({
+                    poId: payload.poId || '',
                     refPrUid: payload.refPrUid || '',
                     vendor: payload.vendor,
                     warehouse: payload.warehouse,
@@ -1517,9 +1518,13 @@
                         remark: it.remark || ''
                     }))
                 }, token);
-                hideDataLoading();
-                showNotification(result.message || 'อัปเดต PO เรียบร้อยแล้ว', 'success');
-                loadInitialDataInBackground(true);
+                if (await loadInitialDataInBackground(true)) {
+                    hideDataLoading();
+                    showNotification(result.message || 'อัปเดต PO เรียบร้อยแล้ว', 'success');
+                } else {
+                    poActiveDataRendered = false;
+                    showDataLoadFailure('บันทึก PO แล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองโหลดอีกครั้งก่อนแก้ไขต่อ');
+                }
                 return result;
             } else if (action === "deletePO" || action === "deleteBill") {
                 removeCache("CACHE_PO_ACTIVE_V3");
@@ -2130,6 +2135,7 @@
         if (prVendor) vendorInput.value = prVendor;
 
         const form = document.getElementById('form-create-po');
+        delete form.dataset.poId;
         document.getElementById('c-ref-pr-row').value = pr.rowNumber;
         form.dataset.prId = pr.prId || prId || "";
         form.dataset.prid = pr.prId || prId || "";
@@ -2192,7 +2198,7 @@
         group.items.forEach(item => {
             const rawItemRemark = item.itemRemark || (item.poRemark && item.poRemark !== group.billRemark ? item.poRemark : '');
             const itemRemark = cleanDirectPoRemark(rawItemRemark);
-            addCreatePoItemRow(item.product, item.quantity, item.unit, item.sku, itemRemark);
+            addCreatePoItemRow(item.product, item.quantity, item.unit, item.sku, itemRemark, item.uid || item.id || '');
         });
 
         // เก็บ UID เก่าไว้ในฟอร์มเพื่อส่งไปลบ
@@ -2200,6 +2206,7 @@
         const form = document.getElementById('form-create-po');
         const refPrUid = usableBillRefUid(group.refPrUid || group.items[0].refPrUid);
         form.dataset.mode = 'edit';
+        form.dataset.poId = group.poId || group.items[0].poId || '';
         form.dataset.oldUids = JSON.stringify(poUids);
         form.dataset.refPrUid = refPrUid;
         form.dataset.prUid = refPrUid && !isDirectBillRefUid(refPrUid) ? refPrUid : "";
@@ -2222,6 +2229,7 @@
         const form = document.getElementById('form-create-po');
         form.reset();
         delete form.dataset.mode;
+        delete form.dataset.poId;
         delete form.dataset.oldUids;
         delete form.dataset.prUid;
         delete form.dataset.refPrUid;
@@ -2277,9 +2285,10 @@
         return duplicates;
     }
 
-    function addCreatePoItemRow(product = '', qty = '', unit = '', sku = '', remark = '') {
+    function addCreatePoItemRow(product = '', qty = '', unit = '', sku = '', remark = '', uid = '') {
         const container = document.getElementById('create-po-items-container');
         const div = document.createElement('div');
+        div.dataset.uid = uid;
         const itemRowId = ++createPoItemRowCounter;
         div.className = "create-po-item-row flex flex-col bg-gray-50 rounded-xl border border-gray-200 p-2 sm:p-0 sm:bg-white sm:rounded-lg mt-2 focus-within:z-50";
         div.innerHTML = `
@@ -2336,7 +2345,7 @@
             const itemRemark = itemRemarkInput ? itemRemarkInput.value.trim() : "";
 
             if(!product || !quantity) hasError = true;
-            else items.push({ sku, product, quantity, unit, remark: itemRemark });
+            else items.push({ uid: row.dataset?.uid || undefined, sku, product, quantity, unit, remark: itemRemark });
         });
 
         if(hasError || items.length === 0) return showNotification("กรุณากรอกข้อมูลสินค้าให้ครบถ้วน", "warning");
@@ -2368,36 +2377,8 @@
             if (form.dataset.mode === "edit") {
                 const oldPoUids = JSON.parse(form.dataset.oldUids);
                 const poNumber = form.dataset.poNumber;
-                res = await apiAction("updatePO", { oldPoUids, vendor, warehouse, poNumber, expectedDate, remark, items, prUid, refPrUid });
+                res = await apiAction("updatePO", { poId: form.dataset.poId || '', oldPoUids, vendor, warehouse, poNumber, expectedDate, remark, items, prUid, refPrUid });
                 if (res && res.success) {
-                    const oldUidsSet = new Set(oldPoUids);
-                    appData.pendingPOs = (appData.pendingPOs || []).filter(po => !oldUidsSet.has(po.uid));
-                    const todayStr = new Date().toLocaleDateString("en-GB");
-                    const updatedItems = items.map((it, idx) => ({
-                        uid: (res.poUids && res.poUids[idx]) || ("po-upd-" + Date.now() + "-" + idx),
-                        refPrUid: refPrUid || ("DIRECT-" + Date.now()),
-                        rowNumber: 99999 + idx,
-                        poDate: todayStr,
-                        poNumber: poNumber || "",
-                        vendor: vendor,
-                        warehouse: warehouse,
-                        expectedDate: expectedDate,
-                        sku: it.sku || "",
-                        product: it.product,
-                        quantity: it.quantity,
-                        unit: it.unit || "",
-                        billRemark: remark,
-                        itemRemark: it.remark || "",
-                        poRemark: it.remark ? (remark ? `${remark} | ${it.remark}` : it.remark) : remark,
-                        remark: "",
-                        status: "Pending GR",
-                        displayStatus: "Pending GR",
-                        grQty: "", locIn: "", exp: "", ata: "", receiverName: "", leadtime: "", oldStock: "",
-                        billReceivingStarted: false,
-                        billHasCompletedSibling: false
-                    }));
-                    appData.pendingPOs.push(...updatedItems);
-                    processDataAndRender();
                     closeCreatePoModal();
                 }
             } else if (refPrRow) {
