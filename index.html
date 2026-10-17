@@ -16,6 +16,7 @@
   <style>
     body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
     .glass-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+    .po-warehouse-c1 { background-color: #0369a1; }
     .input-field { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; transition: border-color 0.2s; font-size: 14px; background: #fff; }
     .input-field:focus { border-color: #171C8F; box-shadow: 0 0 0 2px rgba(23, 28, 143, 0.1); }
     #p-search { padding-left: 2.5rem; }
@@ -72,6 +73,7 @@
     #tab-po :is(button, input, select):focus-visible { outline: 3px solid var(--bm-focus); outline-offset: 3px; }
     #po-bill-detail-modal > div { max-width: 768px; }
     #po-bill-detail-content { overflow-wrap: anywhere; }
+    #app-content #po-bill-detail-delete { color: #b91c1c; }
     .po-read-notice { padding:16px; margin-block:16px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#881337; }
     .po-read-notice p { margin-top:4px; font-size:14px; }
     .po-read-notice button, #po-auth-error-action { background:var(--bm-primary) !important; color:var(--bm-on-primary) !important; padding:8px 14px; border-radius:8px; min-height:44px; }
@@ -1007,7 +1009,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261013.03";
+    const CURRENT_VERSION = "20261017.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1690,7 +1692,7 @@
             case 'W3': return `<span class="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">W3</span>`;
             case 'W4': return `<span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">W4</span>`;
             case 'W5': return `<span class="bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">W5</span>`;
-            case 'C1': return `<span class="bg-sky-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">C1</span>`;
+            case 'C1': return `<span class="po-warehouse-c1 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">C1</span>`;
             case 'C2': return `<span class="bg-brand-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">C2</span>`;
             default: return `<span class="bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm inline-flex items-center tracking-wide">${esc(warehouse)}</span>`;
         }
