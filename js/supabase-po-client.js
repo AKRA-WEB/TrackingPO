@@ -16,7 +16,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     const API_URL = 'https://hgxrrskztbpejirrdpbq.supabase.co/functions/v1/po-api';
-    const READ_ACTIONS = new Set(['bootstrap', 'getInitialData', 'getProducts', 'getDeliveryInsights']);
+    const READ_ACTIONS = new Set(['bootstrap', 'getInitialData', 'getProducts', 'getDeliveryInsights', 'getPoBillDetail']);
 
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -110,6 +110,7 @@
     return {
         request,
         getInitialData: (options, token) => request('getInitialData', options, token),
+        getPoBillDetail: (data, token) => request('getPoBillDetail', data, token),
         getProducts: (data, token) => getCatalog(data, token),
         getDeliveryInsights: (data, token) => request('getDeliveryInsights', data, token),
         saveDirectPO: (poData, token) => request('createPO', poData, token),

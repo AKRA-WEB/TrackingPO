@@ -1,0 +1,20 @@
+'use strict';
+const assert = require('node:assert/strict');
+const calls = []; let mutations = 0, saved = 0, resolve;
+const session = { token: 'fictional-session' };
+global.window = { appSession: session, AkraModule: { embedded: true, getToken: () => window.appSession.token, runMutation: async fn => { mutations++; return fn(); }, markSaved: () => { saved++; } } };
+global.fetch = async (url, init) => { calls.push(JSON.parse(init.body)); return new Promise(done => { resolve = done; }); };
+const client = require('../js/supabase-po-client.js');
+const reply = () => ({ ok: true, json: async () => ({ success: true, bill: { poId: 'fixture' } }) });
+(async () => {
+  const payload = { poId: 'fixture', poUids: ['item'], refPrUid: 'DIRECT-FIXTURE' };
+  const read = client.getPoBillDetail(payload, 'ignored-standalone');
+  resolve(reply()); assert.equal((await read).success, true);
+  assert.equal(calls.length, 1); assert.equal(calls[0].action, 'getPoBillDetail'); assert.deepEqual(calls[0].data, payload); assert.equal(calls[0].token, session.token);
+  assert.equal(mutations, 0, 'detail never enters mutation busy fence'); assert.equal(saved, 0, 'read never clears an unsaved draft');
+  const stale = client.getPoBillDetail(payload); window.appSession = { token: 'another-owner' }; resolve(reply());
+  await assert.rejects(stale, error => error.reason === 'session_changed');
+  assert.equal(mutations, 0); assert.equal(saved, 0);
+  delete global.window;
+  console.log('PASS full bill client: authenticated read transport, unchanged identity, no mutation/save state, stale owner rejected');
+})().catch(error => { console.error(error); process.exitCode = 1; });

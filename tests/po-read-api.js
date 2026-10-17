@@ -127,6 +127,12 @@ function createReadContext(globals) {
     assert.strictEqual(res.pendingPOs, undefined, 'stale owner data must not be returned');
   }
 
+  {
+    let observed;
+    const context = createReadContext({ console, AppVersionGuard: { blockIfStale: async () => false }, getSessionToken: () => 'token-123', AkraSupabasePO: { getPoBillDetail: async (payload, token) => { observed = { payload, token }; return { success: true, bill: { poId: 'exact-po', items: [] } }; } } });
+    const result = await vm.runInContext("readApiCall('getPoBillDetail', { poId:'exact-po', poUids:['exact-item'] })", context);
+    assert.equal(result.bill.poId, 'exact-po'); assert.equal(observed.token, 'token-123'); assert.equal(observed.payload.poUids[0], 'exact-item');
+  }
   console.log('PASS po-read-api: readApiCall delegates to AkraSupabasePO, maps projections, checks stale version, and fails closed');
 })().catch(error => {
   console.error(error);

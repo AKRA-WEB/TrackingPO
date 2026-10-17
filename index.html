@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="assets/bm-tokens.css?v=20261013.03">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase-po-client.js?v=20261013.03" defer></script>
+  <script src="js/supabase-po-client.js?v=20261017.03" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -71,9 +71,10 @@
     #btn-submit-direct-po { background: var(--bm-primary) !important; color: var(--bm-on-primary) !important; }
     #btn-submit-direct-po:hover { background: var(--bm-primary-hover) !important; }
     #tab-po :is(button, input, select):focus-visible { outline: 3px solid var(--bm-focus); outline-offset: 3px; }
-    #po-bill-detail-modal > div { max-width: 768px; }
+    #po-bill-detail-modal > div { max-width: 1040px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }
     #po-bill-detail-content { overflow-wrap: anywhere; }
     #po-bill-detail-modal #po-bill-detail-delete { color: #b91c1c; }
+    #po-bill-detail-modal #po-bill-detail-delete.hidden { display: none !important; }
     .po-read-notice { padding:16px; margin-block:16px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#881337; }
     .po-read-notice p { margin-top:4px; font-size:14px; }
     .po-read-notice button, #po-auth-error-action { background:var(--bm-primary) !important; color:var(--bm-on-primary) !important; padding:8px 14px; border-radius:8px; min-height:44px; }
@@ -107,7 +108,7 @@
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
-      min-width: 320px;
+      min-width: 0;
       color: var(--po-ink);
       background: #fff;
       font-family: var(--po-font);
@@ -648,8 +649,30 @@
   <style id="po-enterprise-ui">
     /* Main-aligned shell; Direct PO command and modal retain their own styles. */
     #po-bill-detail-content { margin-block: 1rem; }
+    #po-bill-detail-content { min-height: 0; max-height: none; }
+    .po-detail-meta { color: #475569; margin-bottom: 16px; }
+    .po-detail-list { display: grid; gap: 12px; margin-top: 12px; }
+    .po-detail-line { padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .po-detail-line-head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 8px; }
+    .po-detail-line-head > div { flex: 1; min-width: 160px; }
+    .po-detail-sku, .po-detail-note { color: #475569; font-size: 13px; margin-top: 6px; }
+    .po-detail-state { border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #334155; }
+    .po-detail-state--received { background: #dcfce7; color: #166534; }
+    .po-detail-state--partial, .po-detail-state--in_progress { background: #fff7ed; color: #9a3412; }
+    .po-detail-quantities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+    .po-detail-quantities dt { font-size: 12px; color: #475569; }
+    .po-detail-quantities dd { font-size: 15px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .po-detail-history { margin-top: 12px; font-size: 13px; color: #475569; }
+    .po-detail-history summary { cursor: pointer; padding-block: 4px; }
+    .po-detail-history li { margin-top: 6px; }
+    @media (max-width: 480px) {
+      #po-bill-detail-modal > div { padding: 16px; }
+      .po-detail-line { padding: 12px; }
+      .po-detail-quantities { gap: 8px; }
+      .po-detail-quantities dd { font-size: 14px; }
+    }
     #po-bill-detail-modal .po-bill-detail-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }
-    #app-content { padding-left: 240px; background: #f5f7fa; }
+    #app-content { min-width: 0; padding-left: 240px; background: #f5f7fa; }
     #app-content > nav { min-height: 76px; background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: none; color: #172033; }
     #app-content > nav > div { width: calc(100% - 48px); }
     #app-content > nav > div > div { height: 76px; }
@@ -668,7 +691,7 @@
     #app-content .tab-btn:hover { color: #fff; background: #1c2b43; }
     #app-content .tab-btn.active { color: #fff; background: #2563eb; }
     #app-content .tab-btn span { flex-shrink: 0; }
-    #app-content main > div:last-child { width: calc(100% - 48px); max-width: 1440px; padding-bottom: 40px; }
+    #app-content main > div:last-child { width: calc(100% - 48px); max-width: none; padding-bottom: 40px; }
     #app-content main > div:last-child > section { padding-top: 28px; }
     #app-content h2 { letter-spacing: -.02em; }
     .po-overview { display: block; padding: 0 0 22px; }
@@ -684,7 +707,17 @@
     .po-metric > span:last-child { font-size: 12px; font-weight: 400; }
     #tab-po .po-filter-grid { background: #fff; border-radius: 12px; margin-top: 16px; }
     #tab-po .po-queue-head { margin-top: 26px; }
+    #tab-po { container-type: inline-size; }
     #po-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    #po-container .po-card-actions { min-width: 0; flex-shrink: 1; flex-wrap: wrap; white-space: normal; justify-content: flex-end; }
+    #po-container .po-card-details > div:first-child { flex-wrap: wrap; }
+    #po-container .po-card-details > div:first-child > span { flex-shrink: 0; white-space: nowrap; }
+    @container (min-width: 1040px) {
+      #po-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @container (min-width: 1280px) {
+      #po-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
     #po-container > div, #pr-container > div, #match-container > div, #apv-container > div { border: 1px solid #e2e8f0 !important; border-radius: 12px; box-shadow: none; }
     #po-container > div:hover { transform: none; box-shadow: none; }
     #app-content main { scrollbar-color: #cbd5e1 #f5f7fa; }
@@ -700,6 +733,7 @@
       #app-content > nav { min-height: 64px; }
       #app-content > nav > div { width: calc(100% - 24px); }
       #app-content > nav > div > div { height: 64px; }
+      #app-content > nav > div > div { height: auto; min-height: 64px; flex-wrap: wrap; gap: 6px; padding-block: 8px; }
       #app-content > nav h1 { font-size: 14px; }
       #app-content > nav .po-user { display: none; }
       #app-content main > .po-workflow-nav { position: static; width: 100%; padding: 12px; }
@@ -1009,7 +1043,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261017.02";
+    const CURRENT_VERSION = "20261017.03";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1309,7 +1343,7 @@
                 else if (embedded) poPendingVerification = null;
                 const isVersionOk = await checkAppVersion();
                 if (!current() || !isVersionOk) return;
-                AppVersionGuard.start({ current: CURRENT_VERSION, readActions: ['getInitialData', 'getProducts', 'getVendorDeliveryInsights'] });
+                AppVersionGuard.start({ current: CURRENT_VERSION, readActions: ['getInitialData', 'getProducts', 'getVendorDeliveryInsights', 'getPoBillDetail'] });
                 lucide.createIcons();
                 UI.showLoading();
                 if (window.AkraModule?.embedded) {
@@ -1938,6 +1972,10 @@
                     apvList: data.apvList || [],
                     vendors: data.vendors || []
                 };
+            } else if (action === 'getPoBillDetail') {
+                const result = await AkraSupabasePO.getPoBillDetail(payload || {}, token);
+                if (!current()) return poReadFailure({reason:'session_changed'});
+                return result?.success === false || result?.status === 'error' ? poReadFailure(result) : result;
             } else if (action === 'getProducts') {
                 const res = await AkraSupabasePO.getProducts(payload || {}, token);
                 if (!current()) return poReadFailure({reason:'session_changed'});
@@ -2881,25 +2919,74 @@
     }
 
     var poBillDetailReturnFocus = null;
-    function openPoBillDetail(request) {
+    var poBillDetailGeneration = 0;
+    function renderPoBillDetail(bill) {
+        const qty = (value, unit) => value === null || value === undefined || !Number.isFinite(Number(value)) ? 'ยังระบุไม่ได้' : `${Number(value).toLocaleString('th-TH', { maximumFractionDigits: 4 })} ${esc(unit || '')}`;
+        const states = { received: 'รับครบแล้ว', partial: 'รับแล้วบางส่วน', pending: 'ยังไม่ได้รับ', in_progress: 'อยู่ระหว่างรับสินค้า', cancelled: 'ยกเลิกยอดค้างแล้ว', unknown: 'ต้องตรวจสอบยอดรับ' };
+        const receiptState = value => ({ 'GR Completed': 'รับเข้าสำเร็จ', Completed: 'รับเข้าสำเร็จ', 'Pending Review': 'รออนุมัติรับเข้า', 'Draft GR': 'ร่างใบรับ', Draft: 'ร่างใบรับ', Cancelled: 'ยกเลิกใบรับ' }[value] || 'ต้องตรวจสอบสถานะ');
+        const lines = bill.items.map((item, index) => {
+            const notes = [
+                item.inProgressQty !== null && item.inProgressQty !== undefined ? `ระบุรับ ${qty(item.inProgressQty, item.receivedUnit)} (ยังไม่อนุมัติรับเข้า)` : '',
+                item.overReceivedQty > 0 ? `รับเกินใบสั่งซื้อ ${qty(item.overReceivedQty, item.unit)}` : '',
+                item.quantityIssue === 'different_units' ? 'หน่วยรับต่างจากหน่วยสั่งซื้อ จึงยังคำนวณยอดค้างไม่ได้' : item.quantityIssue ? 'ข้อมูลรับสินค้ายังไม่ชัดเจน กรุณาตรวจสอบใบรับก่อนใช้ยอดค้าง' : '',
+                item.remark ? esc(item.remark) : ''
+            ].filter(Boolean);
+            const history = item.receipts?.length ? `<details class="po-detail-history"><summary>ใบรับที่เกี่ยวข้อง (${item.receipts.length})</summary><ul>${item.receipts.map(receipt => `<li>${esc(receipt.grNumber || 'ใบรับไม่ระบุเลข')} · ${esc(receiptState(receipt.status))} · ${qty(receipt.quantity, receipt.unit)}${receipt.current === false ? ' · ประวัติก่อนหน้า' : ''}</li>`).join('')}</ul></details>` : '';
+            return `<li class="po-detail-line"><div class="po-detail-line-head"><div><strong>${index + 1}. ${esc(item.product || '-')}</strong><p class="po-detail-sku">SKU: ${esc(item.sku || '-')}</p></div><span class="po-detail-state po-detail-state--${esc(item.status || 'unknown')}">${esc(states[item.status] || states.unknown)}</span></div><dl class="po-detail-quantities"><div><dt>สั่งซื้อ</dt><dd>${qty(item.orderedQty, item.unit)}</dd></div><div><dt>รับแล้ว</dt><dd>${qty(item.receivedQty, item.receivedUnit || item.unit)}</dd></div><div><dt>${item.status === 'cancelled' ? 'ยกเลิกยอดค้าง' : 'ค้างรับ'}</dt><dd>${qty(item.status === 'cancelled' ? item.cancelledQty : item.outstandingQty, item.unit)}</dd></div></dl>${notes.map(note => `<p class="po-detail-note">${note}</p>`).join('')}${history}</li>`;
+        }).join('');
+        const extras = bill.extras?.length ? `<h3 class="font-bold mt-4">สินค้าเพิ่มเติมในใบรับ (${bill.extras.length})</h3><ul class="po-detail-list">${bill.extras.map(item => `<li class="po-detail-line"><strong>${esc(item.product || '-')}</strong><p class="po-detail-note">${esc(receiptState(item.status))} · ${qty(item.quantity, item.unit)} · ${esc(item.grNumber || 'ใบรับไม่ระบุเลข')}</p></li>`).join('')}</ul>` : '';
+        return `<div class="po-detail-meta"><p>${esc(bill.vendor || '-')} · คลัง ${esc(bill.warehouse || '-')}</p>${bill.remark ? `<p class="mt-2">หมายเหตุ: ${esc(bill.remark)}</p>` : ''}</div><h3 class="font-bold">รายการในบิลทั้งหมด (${bill.items.length} รายการ)</h3><ol class="po-detail-list">${lines}</ol>${extras}`;
+    }
+    async function openPoBillDetail(request) {
         const uids = normalizeDeletePoUids(request?.poUids);
         const allRows = [...(appData.pendingPOs || []), ...(appData.grCompleted || []), ...(appData.apvList || [])];
         const rows = uids.map(uid => allRows.find(row => String(row.uid || '').trim() === uid)).filter(Boolean);
-        if (!uids.length || rows.length !== uids.length) return showNotification('ข้อมูลบิลไม่เป็นปัจจุบัน กรุณารีเฟรชก่อนเปิดรายละเอียด', 'error');
+        if (!request?.poId || !uids.length || rows.length !== uids.length || rows.some(row => row.poId !== request.poId)) return showNotification('ข้อมูลบิลไม่เป็นปัจจุบัน กรุณารีเฟรชก่อนเปิดรายละเอียด', 'error');
+        const generation = ++poBillDetailGeneration;
+        const owner = window.appSession;
+        const token = getSessionToken();
+        const current = () => { try { return generation === poBillDetailGeneration && window.appSession === owner && getSessionToken() === token; } catch (_) { return false; } };
         poBillDetailReturnFocus = document.activeElement;
         document.getElementById('po-bill-detail-title').innerText = `รายละเอียดบิลสั่งซื้อ (${rows[0].poNumber || 'ไม่มีเลข'})`;
-        document.getElementById('po-bill-detail-content').innerHTML = `<p>${esc(rows[0].vendor || '-')} · ${esc(rows[0].warehouse || '-')}</p><ol>${rows.map(row => `<li class="py-2 border-b border-gray-200"><strong>${esc(row.product || '-')}</strong><span> ${esc(row.quantity ?? row.poQty ?? 0)} ${esc(row.unit || '')}</span></li>`).join('')}</ol>`;
         const button = document.getElementById('po-bill-detail-delete');
-        button.classList.toggle('hidden', !can('createPO'));
+        button.classList.add('hidden');
         const original = { ...request, poUids: [...uids] };
         button.onclick = () => deletePO(original);
         const modal = document.getElementById('po-bill-detail-modal');
         modal.classList.remove('hidden'); modal.classList.add('flex');
         document.getElementById('po-bill-detail-close').focus?.();
+        const content = document.getElementById('po-bill-detail-content');
+        const load = async () => {
+            if (!current()) return;
+            content.setAttribute('aria-busy', 'true');
+            content.innerHTML = '<p role="status">กำลังโหลดรายการทั้งหมดและสถานะรับสินค้า…</p>';
+            let result;
+            try { result = await readApiCall('getPoBillDetail', { poId: original.poId, poUids: [...uids], refPrUid: original.refPrUid }); }
+            catch (error) { result = poReadFailure(error); }
+            if (!current()) {
+                if (generation === poBillDetailGeneration) closePoBillDetail();
+                return;
+            }
+            content.setAttribute('aria-busy', 'false');
+            const bill = result?.bill;
+            if (result?.success !== false && bill?.poId === original.poId && Array.isArray(bill.items) && bill.items.length && uids.every(uid => bill.items.some(item => item.poItemId === uid))) {
+                document.getElementById('po-bill-detail-title').innerText = `รายละเอียดบิลสั่งซื้อ (${bill.poNumber || 'ไม่มีเลข'})`;
+                content.innerHTML = renderPoBillDetail(bill);
+                button.classList.toggle('hidden', !can('createPO'));
+                return;
+            }
+            const state = uiReadErrorState(result);
+            const message = state ? `${state.title} — ${state.body}` : 'โหลดบิลฉบับเต็มไม่ได้ ข้อมูลอาจเปลี่ยนแปลง กรุณารีเฟรชหรือลองอีกครั้ง';
+            content.innerHTML = `<div role="alert"><p>${esc(message)}</p><button type="button" id="po-bill-detail-retry" class="btn-outline-action mt-3">ลองอีกครั้ง</button></div>`;
+            document.getElementById('po-bill-detail-retry').onclick = load;
+        };
+        await load();
     }
     function closePoBillDetail() {
+        ++poBillDetailGeneration;
         const modal = document.getElementById('po-bill-detail-modal');
         modal.classList.add('hidden'); modal.classList.remove('flex');
+        document.getElementById('po-bill-detail-content').innerHTML = '';
         if (poBillDetailReturnFocus?.isConnected !== false) poBillDetailReturnFocus?.focus?.();
         poBillDetailReturnFocus = null;
     }
@@ -2908,7 +2995,7 @@
         if (event.defaultPrevented || !modal || modal.classList.contains('hidden') || !document.getElementById('custom-confirm-modal').classList.contains('hidden')) return;
         if (event.key === 'Escape') { event.preventDefault(); closePoBillDetail(); return; }
         if (event.key !== 'Tab') return;
-        const buttons = Array.from(modal.querySelectorAll('button')).filter(button => !button.disabled && !button.classList.contains('hidden'));
+        const buttons = Array.from(modal.querySelectorAll('button, summary')).filter(button => !button.disabled && !button.classList.contains('hidden'));
         const next = event.shiftKey ? buttons[buttons.length - 1] : buttons[0];
         if (buttons.length && document.activeElement === (event.shiftKey ? buttons[0] : buttons[buttons.length - 1])) { event.preventDefault(); next.focus(); }
     });
