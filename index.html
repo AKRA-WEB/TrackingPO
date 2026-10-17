@@ -73,7 +73,7 @@
     #tab-po :is(button, input, select):focus-visible { outline: 3px solid var(--bm-focus); outline-offset: 3px; }
     #po-bill-detail-modal > div { max-width: 768px; }
     #po-bill-detail-content { overflow-wrap: anywhere; }
-    #app-content #po-bill-detail-delete { color: #b91c1c; }
+    #po-bill-detail-modal #po-bill-detail-delete { color: #b91c1c; }
     .po-read-notice { padding:16px; margin-block:16px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#881337; }
     .po-read-notice p { margin-top:4px; font-size:14px; }
     .po-read-notice button, #po-auth-error-action { background:var(--bm-primary) !important; color:var(--bm-on-primary) !important; padding:8px 14px; border-radius:8px; min-height:44px; }
@@ -1009,7 +1009,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261017.01";
+    const CURRENT_VERSION = "20261017.02";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
