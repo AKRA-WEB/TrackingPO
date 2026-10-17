@@ -9,13 +9,23 @@ const end = html.indexOf('\n    async function ', start + 1);
 
 assert(start >= 0 && end > start, 'readApiCall must exist in index.html');
 const functionSource = html.slice(start, end);
+const failureStart = html.indexOf('    function uiReadErrorState(');
+const failureEnd = html.indexOf('    function showPoAuthFailure(', failureStart);
+assert(failureStart >= 0 && failureEnd > failureStart, 'PO read failure helpers must exist');
+const failureSource = html.slice(failureStart, failureEnd);
+function createReadContext(globals) {
+  const context = vm.createContext({ window: { appSession: { token: 'token-123' } }, ...globals });
+  vm.runInContext(failureSource, context);
+  vm.runInContext(functionSource, context);
+  return context;
+}
 
 (async () => {
   // Test 1: getInitialData
   {
     let receivedPayload = null;
     let receivedToken = null;
-    const context = vm.createContext({
+    const context = createReadContext({
       console,
       AppVersionGuard: { blockIfStale: async () => false },
       getSessionToken: () => 'token-123',
@@ -33,7 +43,6 @@ const functionSource = html.slice(start, end);
         }
       }
     });
-    vm.runInContext(functionSource, context);
     const res = await vm.runInContext("readApiCall('getInitialData', { includeCompleted: true })", context);
     assert.strictEqual(res.success, true);
     assert.strictEqual(receivedToken, 'token-123');
@@ -47,7 +56,7 @@ const functionSource = html.slice(start, end);
 
   // Test 2: getProducts
   {
-    const context = vm.createContext({
+    const context = createReadContext({
       console,
       AppVersionGuard: { blockIfStale: async () => false },
       getSessionToken: () => 'token-123',
@@ -60,7 +69,6 @@ const functionSource = html.slice(start, end);
         })
       }
     });
-    vm.runInContext(functionSource, context);
     const res = await vm.runInContext("readApiCall('getProducts')", context);
     assert.strictEqual(res.success, true);
     assert.strictEqual(res.products.length, 2);
@@ -70,7 +78,7 @@ const functionSource = html.slice(start, end);
   // Test 3: Stale version block
   {
     let called = false;
-    const context = vm.createContext({
+    const context = createReadContext({
       console,
       AppVersionGuard: { blockIfStale: async () => true },
       getSessionToken: () => 'token-123',
@@ -78,7 +86,6 @@ const functionSource = html.slice(start, end);
         getInitialData: async () => { called = true; return {}; }
       }
     });
-    vm.runInContext(functionSource, context);
     const res = await vm.runInContext("readApiCall('getInitialData')", context);
     assert.strictEqual(res.success, false);
     assert.match(res.message, /เวอร์ชันใหม่/);
@@ -87,7 +94,7 @@ const functionSource = html.slice(start, end);
 
   // Test 4: Error handling fail-safe
   {
-    const context = vm.createContext({
+    const context = createReadContext({
       console,
       AppVersionGuard: { blockIfStale: async () => false },
       getSessionToken: () => 'token-123',
@@ -95,10 +102,29 @@ const functionSource = html.slice(start, end);
         getInitialData: async () => { throw new Error('database_unavailable'); }
       }
     });
-    vm.runInContext(functionSource, context);
     const res = await vm.runInContext("readApiCall('getInitialData')", context);
     assert.strictEqual(res.success, false);
-    assert.strictEqual(res.message, 'database_unavailable');
+    assert.strictEqual(res.message, 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง');
+    assert.doesNotMatch(res.message, /database_unavailable/, 'private transport details must not reach the operator');
+  }
+
+  // Test 5: A response from the previous page owner must never become current data.
+  {
+    let resolveRead;
+    const context = createReadContext({
+      console,
+      AppVersionGuard: { blockIfStale: async () => false },
+      getSessionToken: () => 'token-123',
+      AkraSupabasePO: { getInitialData: () => new Promise(resolve => { resolveRead = resolve; }) }
+    });
+    const pending = vm.runInContext("readApiCall('getInitialData')", context);
+    await new Promise(setImmediate);
+    context.window.appSession = { token: 'token-123' };
+    resolveRead({ pendingPOs: [{ uid: 'previous-owner-item' }] });
+    const res = await pending;
+    assert.strictEqual(res.success, false);
+    assert.strictEqual(res.reason, 'session_changed');
+    assert.strictEqual(res.pendingPOs, undefined, 'stale owner data must not be returned');
   }
 
   console.log('PASS po-read-api: readApiCall delegates to AkraSupabasePO, maps projections, checks stale version, and fails closed');

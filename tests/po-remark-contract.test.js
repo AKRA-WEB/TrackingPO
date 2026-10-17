@@ -125,6 +125,7 @@ const mockAkraSupabasePO = {
 
 const context = vm.createContext({
   window: {
+    addEventListener() {},
     location: { href: 'https://akra-web.github.io/TrackingPO/', pathname: '/TrackingPO/', search: '' },
     history: { replaceState: () => {} },
     self: {},

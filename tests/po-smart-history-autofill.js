@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {backendPath} = require('./helpers/backend-source.cjs');
 
 console.log('=== Running Executable PO Smart History & Autofill Tests ===\n');
 
@@ -169,7 +170,7 @@ assert.equal(warehouseSelect.value, 'W1', 'Warehouse should auto-fill to W1');
 console.log('[PASS] 4. Multi-token search and last_vendor priority verified');
 
 // 7. Verify SQL migration syntax & RPC definition
-const migrationPath = path.join(__dirname, '..', '..', 'database', 'supabase', 'migrations', '20260830130000_po_smart_product_history.sql');
+const migrationPath = backendPath('supabase', 'migrations', '20260830130000_po_smart_product_history.sql');
 const migrationSql = fs.readFileSync(migrationPath, 'utf8');
 assert.ok(migrationSql.includes('get_products_with_po_history()'), 'Migration must define get_products_with_po_history()');
 assert.ok(migrationSql.includes("default_vendor = 'KCG Corp'"), 'Migration must update Okun tart default vendor to KCG Corp');
@@ -178,7 +179,7 @@ assert.ok(migrationSql.includes('last_warehouse TEXT'), 'RPC return table must i
 console.log('[PASS] 5. Migration contract verified');
 
 // 8. Verify po-api Edge function getProducts implementation
-const edgeApiPath = path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', 'po-api', 'index.ts');
+const edgeApiPath = backendPath('supabase', 'functions', 'po-api', 'index.ts');
 const edgeApiTs = fs.readFileSync(edgeApiPath, 'utf8');
 assert.ok(edgeApiTs.includes('get_products_with_po_history'), 'po-api must call get_products_with_po_history RPC');
 assert.ok(edgeApiTs.includes('last_vendor:'), 'po-api must map last_vendor');

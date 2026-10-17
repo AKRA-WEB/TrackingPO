@@ -2,14 +2,15 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <script src="js/akra-shell-bridge.js?v=20261002.01"></script>
+    <script src="js/akra-shell-bridge.js?v=20261013.03"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BUYMORETH | จัดซื้อสินค้า</title>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/bm-tokens.css?v=20261013.03">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase-po-client.js?v=20261002.01" defer></script>
+  <script src="js/supabase-po-client.js?v=20261013.03" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -51,6 +52,29 @@
     @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
 
     .loading-active { overflow: hidden; }
+    /* Readability in daily bill management; no generated Tailwind changes. */
+    #tab-po { --po-muted: var(--bm-text-secondary); --po-muted-2: var(--bm-text-secondary); }
+    #tab-po :is([class*="text-[8px]"], [class*="text-[9px]"], [class*="text-[10px]"], [class*="text-[11px]"]) { font-size: var(--bm-text-xs) !important; }
+    #tab-po :is(.text-gray-400, .text-gray-500, .text-slate-400, .text-slate-500) { color: var(--bm-text-secondary) !important; }
+    #tab-po :is(.text-brand-orange, .text-orange-500, .text-orange-600) { color: #9a3412 !important; }
+    #tab-po :is(.po-command-lead small, .po-metric-icon, .po-metric > span:last-child) { font-size: var(--bm-text-xs) !important; }
+    #po-container .po-card-details .uppercase { font-size: var(--bm-text-xs); letter-spacing: 0; }
+    #po-container .po-card-items p { font-size: 13px !important; }
+    #po-container .po-card-items p .text-gray-400 { font-size: var(--bm-text-xs) !important; }
+    #po-container .bg-brand-orange.text-white { background:#ffedd5 !important; color:#9a3412 !important; }
+    #po-container .bg-green-500.text-white { background:#dcfce7 !important; color:#166534 !important; }
+    #tab-po .po-command-grid > button:first-child { background:var(--bm-primary) !important; color:var(--bm-on-primary) !important; }
+    #tab-po .po-command-grid > button:first-child .po-command-lead small { color:var(--bm-on-primary) !important; }
+    #po-container :is(.truncate, .line-clamp-1) { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+    #po-container .po-card-details { min-width: 0; flex-wrap: wrap; }
+    #btn-submit-direct-po { background: var(--bm-primary) !important; color: var(--bm-on-primary) !important; }
+    #btn-submit-direct-po:hover { background: var(--bm-primary-hover) !important; }
+    #tab-po :is(button, input, select):focus-visible { outline: 3px solid var(--bm-focus); outline-offset: 3px; }
+    #po-bill-detail-modal > div { max-width: 768px; }
+    #po-bill-detail-content { overflow-wrap: anywhere; }
+    .po-read-notice { padding:16px; margin-block:16px; border:1px solid #fecaca; border-radius:12px; background:#fff1f2; color:#881337; }
+    .po-read-notice p { margin-top:4px; font-size:14px; }
+    .po-read-notice button, #po-auth-error-action { background:var(--bm-primary) !important; color:var(--bm-on-primary) !important; padding:8px 14px; border-radius:8px; min-height:44px; }
   </style>
   <style id="po-modern-ui">
     :root {
@@ -209,14 +233,14 @@
       padding: 0 6px;
       border: 1px solid transparent;
       border-radius: 999px;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       line-height: 1;
     }
     #app-content .tab-btn span#badge-pr { color: #b12f3a; background: #ffe9eb; border-color: #ffd0d5; }
     #app-content .tab-btn span#badge-po { color: var(--po-blue); background: var(--po-blue-soft); border-color: #d8e1ff; }
-    #app-content .tab-btn span#badge-match { color: #a66a00; background: #fff7dc; border-color: #f5e2a4; }
-    #app-content .tab-btn span#badge-apv { color: var(--po-green); background: var(--po-green-soft); border-color: #c9eedf; }
+    #app-content .tab-btn span#badge-match { color: #854d0e; background: #fff7dc; border-color: #f5e2a4; }
+    #app-content .tab-btn span#badge-apv { color: #0f6e4c; background: var(--po-green-soft); border-color: #c9eedf; }
 
     #app-content main > div:last-child {
       width: min(1440px, calc(100% - 44px));
@@ -269,7 +293,7 @@
     .po-metric:hover { border-color: #cbd5ff; box-shadow: 0 15px 30px rgba(41,56,157,.1); transform: translateY(-3px); }
     .po-metric--primary { border-color: #cbd5ff; background: linear-gradient(145deg, #f4f6ff, #fff 70%); }
     .po-metric-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .po-metric small { color: var(--po-muted); font-size: 11px; font-weight: 600; }
+    .po-metric small { color: var(--po-muted); font-size: 12px; font-weight: 600; }
     .po-metric-icon {
       width: 29px;
       height: 29px;
@@ -278,7 +302,7 @@
       border-radius: 9px;
       color: var(--po-blue);
       background: var(--po-blue-soft);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
     }
     .po-metric strong {
@@ -291,7 +315,7 @@
       line-height: 1;
     }
     .po-metric--primary strong { color: var(--po-blue); }
-    .po-metric > span:last-child { display: block; margin-top: 7px; color: var(--po-muted); font-size: 10px; font-weight: 600; }
+    .po-metric > span:last-child { display: block; margin-top: 7px; color: var(--po-muted); font-size: 12px; font-weight: 600; }
 
     #tab-po .po-command-grid {
       display: grid;
@@ -342,7 +366,7 @@
     }
     #tab-po .po-command-grid > button:first-child .po-command-icon { color: #fff; background: rgba(255,255,255,.14); }
     #tab-po .po-command-lead strong { display: block; color: inherit; font-size: 14px; font-weight: 750; letter-spacing: -.025em; }
-    #tab-po .po-command-lead small { display: block; margin-top: 3px; color: var(--po-muted); font-size: 11px; }
+    #tab-po .po-command-lead small { display: block; margin-top: 3px; color: var(--po-muted); font-size: 12px; }
     #tab-po .po-command-grid > button:first-child .po-command-lead small { color: rgba(255,255,255,.74); }
     #tab-po .po-command-arrow { color: var(--po-muted-2); font-size: 20px; transition: transform .2s ease; }
     #tab-po .po-command-grid > button:hover .po-command-arrow { transform: translateX(4px); }
@@ -358,12 +382,13 @@
       animation: po-reveal .25s ease both;
     }
     #delivery-insight-panel > div:first-child {
-      background: linear-gradient(120deg, #2536b8, #5269ed);
+      background: linear-gradient(120deg, #2536b8, #2f46c3);
       border: 0;
     }
     #delivery-insight-panel > div:first-child h2 { color: #fff; font-size: 15px; letter-spacing: -.025em; }
-    #delivery-insight-panel > div:first-child p { color: rgba(255,255,255,.72); }
-    #delivery-insight-panel .bg-white\\/10 { border: 1px solid rgba(255,255,255,.24); border-radius: 8px; background: rgba(255,255,255,.1); }
+    #delivery-insight-panel > div:first-child p { color: #fff; }
+    #delivery-insight-panel > div:first-child > button { color: #fff; border: 1px solid rgba(255,255,255,.24); border-radius: 8px; background: rgba(255,255,255,.1); }
+    #delivery-insight-panel > div:first-child > button:hover { background: rgba(255,255,255,.2); }
     #delivery-insight-content .border-gray-200,
     #delivery-insight-content > .border { border-color: var(--po-line); border-radius: 11px; box-shadow: none; }
     @keyframes po-reveal { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
@@ -436,13 +461,13 @@
     }
     #po-container .po-card-details { padding-right: 0; }
     #po-container .po-card-details > div:first-child { gap: 7px; }
-    #po-container .po-card-details .uppercase { color: var(--po-muted); font-size: 11px; letter-spacing: .06em; }
+    #po-container .po-card-details .uppercase { color: var(--po-muted); font-size: 12px; letter-spacing: .06em; }
     #po-container .po-card-items > div {
       padding: 8px 0 0;
       border-top: 1px solid var(--po-line);
     }
     #po-container .po-card-items > div:first-child { padding-top: 0; border-top: 0; }
-    #po-container .po-card-items p { color: var(--po-ink); font-size: 11px; font-weight: 650; }
+    #po-container .po-card-items p { color: var(--po-ink); font-size: 12px; font-weight: 650; }
     #po-container .po-card-items p > span:first-child { margin-right: 5px; }
     #po-container .po-card-footer { gap: 9px; padding-top: 14px; border-top-color: var(--po-line); }
     #po-container .po-card-footer > div:first-child { max-width: 58%; border-color: var(--po-line); border-radius: 8px; box-shadow: none; }
@@ -563,19 +588,19 @@
       #app-content > nav > div > div { height: 64px; }
       #app-content > nav h1 { font-size: 14px; }
       #app-content > nav .bg-white\\/10,
-      #app-content > nav #logout-btn { min-height: 44px; padding: 0 8px; font-size: 10px; }
+      #app-content > nav #logout-btn { min-height: 44px; padding: 0 8px; font-size: 12px; }
       #app-content > nav button { min-width: 44px; min-height: 44px; }
       #app-content > nav > div > div { gap: 8px; }
       #app-content > nav > div > div > div { gap: 6px; min-width: 0; }
       #app-content > nav h1 { line-height: 1.3; }
       #app-content main > .bg-white > div { width: calc(100% - 24px); }
-      #app-content .tab-btn { min-height: 55px; padding: 0 13px; font-size: 11px; }
+      #app-content .tab-btn { min-height: 55px; padding: 0 13px; font-size: 12px; }
       #app-content .tab-btn::after { right: 13px; left: 13px; }
       #app-content main > div:last-child { width: calc(100% - 24px); padding-top: 0; padding-bottom: 48px; }
       .po-overview { display: block; padding: 14px 0 10px; }
       .po-overview h2 { font-size: 24px; line-height: 1.2; }
       .po-overview h2 br { display: none; }
-      .po-overview p { font-size: 11px; margin-top: 5px; }
+      .po-overview p { font-size: 12px; margin-top: 5px; }
       .po-metrics { gap: 7px; }
       .po-metric, .po-metric--primary { grid-column: auto; min-height: 0; padding: 6px 10px; }
       .po-metric-top { gap: 5px; }
@@ -620,6 +645,8 @@
   </style>
   <style id="po-enterprise-ui">
     /* Main-aligned shell; Direct PO command and modal retain their own styles. */
+    #po-bill-detail-content { margin-block: 1rem; }
+    #po-bill-detail-modal .po-bill-detail-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }
     #app-content { padding-left: 240px; background: #f5f7fa; }
     #app-content > nav { min-height: 76px; background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: none; color: #172033; }
     #app-content > nav > div { width: calc(100% - 48px); }
@@ -652,7 +679,7 @@
     .po-metric:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
     .po-metric strong { font-size: 28px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
     .po-metric small { font-size: 12px; }
-    .po-metric > span:last-child { font-size: 11px; font-weight: 400; }
+    .po-metric > span:last-child { font-size: 12px; font-weight: 400; }
     #tab-po .po-filter-grid { background: #fff; border-radius: 12px; margin-top: 16px; }
     #tab-po .po-queue-head { margin-top: 26px; }
     #po-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -676,7 +703,7 @@
       #app-content main > .po-workflow-nav { position: static; width: 100%; padding: 12px; }
       #app-content main > .po-workflow-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .po-rail-title { display: none; }
-      #app-content .tab-btn { min-height: 48px; padding: 10px 8px; font-size: 11px; }
+      #app-content .tab-btn { min-height: 48px; padding: 10px 8px; font-size: 12px; }
       #app-content main > div:last-child { width: calc(100% - 24px); }
       #app-content main > div:last-child > section { padding-top: 20px; }
       .po-overview { padding-bottom: 16px; }
@@ -704,12 +731,12 @@
       <p class="text-[#171C8F] font-medium text-lg">กำลังตรวจสอบสิทธิ์...</p>
   </div>
 
-  <div id="auth-error" class="fixed inset-0 bg-white z-[9999] hidden flex flex-col justify-center items-center p-6 text-center">
+  <div id="auth-error" role="alert" class="fixed inset-0 bg-white z-[9999] hidden flex flex-col justify-center items-center p-6 text-center">
       <div class="bg-red-50 p-8 rounded-2xl max-w-md border border-red-100 shadow-lg">
           <i data-lucide="shield-alert" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
-          <h2 class="text-xl font-bold text-gray-800 mb-2">ปฏิเสธการเข้าถึง</h2>
+          <h2 id="po-auth-error-title" class="text-xl font-bold text-gray-800 mb-2">ปฏิเสธการเข้าถึง</h2>
           <p id="error-message" class="text-gray-600 mb-6">คุณไม่มีสิทธิ์เข้าใช้งานแอปพลิเคชันนี้</p>
-          <button onclick="window.AkraModule.home(APP_CONFIG.PORTAL_URL)" class="px-6 py-2.5 bg-[#171C8F] text-white rounded-lg font-medium hover:bg-[#11146B] transition shadow-md">กลับไปหน้าหลัก (Portal)</button>
+          <button id="po-auth-error-action" type="button" onclick="window.AkraModule.home(APP_CONFIG.PORTAL_URL)" class="px-6 py-2.5 bg-[#171C8F] text-white rounded-lg font-medium hover:bg-[#11146B] transition shadow-md">กลับไปหน้าหลัก (Portal)</button>
       </div>
   </div>
 
@@ -758,6 +785,8 @@
         </div>
 
         <div class="p-4 sm:p-6">
+            <div id="po-read-error" role="alert" class="po-read-notice hidden"></div>
+            <div id="po-products-error" role="alert" class="po-read-notice hidden"></div>
 
             <!-- TAB 1: PR -->
             <section id="tab-pr" class="block">
@@ -849,11 +878,11 @@
                         <input type="text" id="p-search" oninput="renderTab2_PO()" class="input-field pl-10 border-gray-200" placeholder="ค้นหาสินค้า, Vendor, เลข PO...">
                     </div>
                     <select id="p-status" onchange="renderTab2_PO()" class="input-field font-medium text-gray-600 border-gray-200">
-                        <option value="">📌 ดูทุกสถานะบิล</option>
-                        <option value="Overdue">🚨 นานผิดปกติ (Overdue)</option>
-                        <option value="Draft GR">📦 กำลังลงสินค้า (Draft)</option>
-                        <option value="Pending Review">⏳ รอคลังยืนยัน</option>
-                        <option value="Pending GR">🕒 รอสินค้าเข้า</option>
+                        <option value="">ดูทุกสถานะบิล</option>
+                        <option value="Overdue">นานผิดปกติ (Overdue)</option>
+                        <option value="Draft GR">กำลังลงสินค้า (Draft)</option>
+                        <option value="Pending Review">รอคลังยืนยัน</option>
+                        <option value="Pending GR">รอสินค้าเข้า</option>
                     </select>
                 </div>
 
@@ -862,6 +891,7 @@
 
             <!-- TAB 3: Match -->
             <section id="tab-match" class="hidden">
+                <div id="po-match-error" role="alert" class="po-read-notice hidden"></div>
                 <div class="mb-5">
                     <h2 class="text-xl font-bold text-gray-800">กระทบยอด (2-Way Matching)</h2>
                     <p class="text-sm text-gray-500 mt-1">เปรียบเทียบและแก้ไขยอดรับจริง (ฝั่งขวา) <span class="text-brand-orange font-medium">*กรณีมีของแถมหรือยอดไม่ตรง เป็นเรื่องปกติ ให้ยึดตามหน้าบิลจริงและระบุเลข PO ให้ครบก่อนกด Approve</span></p>
@@ -871,6 +901,7 @@
 
             <!-- TAB 4: APV -->
             <section id="tab-apv" class="hidden">
+                <div id="po-apv-error" role="alert" class="po-read-notice hidden"></div>
                 <div class="mb-5 flex justify-between items-end">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800">รายการพร้อมส่งทำใบตั้งหนี้ (APV)</h2>
@@ -897,6 +928,7 @@
 
           <form id="form-create-po" onsubmit="submitDirectPO(event)" novalidate>
               <input type="hidden" id="c-ref-pr-row" value="">
+              <div id="po-create-products-error" role="alert" class="po-read-notice hidden"></div>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div class="relative">
@@ -916,7 +948,7 @@
                   <div>
                       <label for="create-po-expected-date" class="block text-sm font-semibold text-gray-700 mb-2">วันที่ Vendor ยืนยันส่ง</label>
                       <input type="date" id="create-po-expected-date" class="input-field bg-white border-gray-200 focus:border-brand-orange" aria-describedby="create-po-expected-date-help">
-                      <p id="create-po-expected-date-help" class="text-[11px] text-gray-500 mt-1">ไม่บังคับ ถ้ามีวันที่นี้ ระบบจะใช้แทนค่าประมาณ</p>
+                      <p id="create-po-expected-date-help" class="text-[11px] text-gray-500 mt-1">ไม่บังคับ ถ้ามีวันที่นี้ ระบบจะใช้แทนค่าประมาณ วันที่ในรายการแสดงปี พ.ศ. เช่น 12 ต.ค. 2569</p>
                   </div>
               </div>
 
@@ -943,14 +975,25 @@
       </div>
   </div>
 
+  <div id="po-bill-detail-modal" role="dialog" aria-modal="true" aria-labelledby="po-bill-detail-title" class="fixed inset-0 bg-black/60 z-[9000] hidden justify-center items-center p-4">
+      <div class="bg-white rounded-xl w-full p-6">
+          <h2 id="po-bill-detail-title" class="text-lg font-bold text-gray-800">รายละเอียดบิลสั่งซื้อ</h2>
+          <div id="po-bill-detail-content" class="my-4 max-h-[400px] overflow-y-auto"></div>
+          <div class="po-bill-detail-actions flex flex-wrap justify-between gap-3">
+              <button type="button" id="po-bill-detail-close" onclick="closePoBillDetail()" class="btn-outline-action">ปิด</button>
+              <button type="button" id="po-bill-detail-delete" class="btn-outline-action btn-delete">ลบทั้งบิล</button>
+          </div>
+      </div>
+  </div>
+
   <!-- Custom Confirm Modal -->
-  <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 z-[10000] hidden justify-center items-center p-4 backdrop-blur-sm">
+  <div id="custom-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" class="fixed inset-0 bg-black/60 z-[10000] hidden justify-center items-center p-4 backdrop-blur-sm">
       <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 text-center">
           <i data-lucide="help-circle" class="w-12 h-12 text-brand-blue mx-auto mb-4"></i>
           <h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการทำรายการ</h3>
           <p class="text-sm text-gray-600 mb-6 whitespace-pre-line" id="confirm-message">คุณแน่ใจหรือไม่?</p>
           <div class="flex justify-center gap-3">
-              <button onclick="closeConfirmModal()" class="flex-1 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">ยกเลิก</button>
+              <button id="btn-confirm-cancel" onclick="closeConfirmModal()" class="flex-1 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">ยกเลิก</button>
               <button id="btn-confirm-action" class="flex-1 py-2 text-sm bg-brand-blue text-white rounded-lg font-medium shadow-md hover:bg-[#11146B]">ยืนยัน</button>
           </div>
       </div>
@@ -964,7 +1007,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261005.01";
+    const CURRENT_VERSION = "20261013.03";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1115,6 +1158,39 @@
     var isVendorEventsAttached = false;
     var confirmCallback = null;
 
+    function uiReadErrorState(error) {
+        const messageReason = !error?.status && /^(?:permission_denied|invalid_or_expired_token|invalid_session|session_changed|session_revoked|session_expired|current_session_required|session_replaced|main_signed_out|no_token|shell_session_unavailable|session_verify_timeout)$/.test(error?.message || '') ? error.message : '';
+        const reason = String(error?.reason || error?.code || messageReason || '').toLowerCase();
+        const status = Number(error?.status || error?.statusCode || 0);
+        if (reason === 'session_changed') return { type: 'changed', title: 'บัญชีหรือเซสชันเปลี่ยนแล้ว', body: 'กรุณาเปิดแอปจาก BUYMORETH ใหม่', action: 'เข้าสู่ระบบอีกครั้ง' };
+        if (['invalid_or_expired_token', 'invalid_session', 'session_revoked', 'session_expired', 'current_session_required', 'session_replaced', 'main_signed_out', 'no_token', 'shell_session_unavailable'].includes(reason)) return { type: 'session', title: 'เซสชันหมดอายุหรือเปลี่ยนแล้ว', body: 'เข้าสู่ระบบ BUYMORETH อีกครั้ง', action: 'เข้าสู่ระบบอีกครั้ง' };
+        if (reason === 'permission_denied') return { type: 'permission', title: 'ไม่มีสิทธิ์ใช้ส่วนนี้', body: 'ติดต่อผู้ดูแลใน BUYMORETH เพื่อขอสิทธิ์', action: 'กลับหน้าหลัก' };
+        if (error?.name === 'AbortError' && reason !== 'request_timeout') return { type: 'cancelled', title: 'ยกเลิกการโหลดแล้ว', body: 'เลือกโหลดข้อมูลอีกครั้งเมื่อต้องการ', action: '' };
+        if (reason === 'request_timeout' || reason === 'session_verify_timeout' || reason === 'offline') return { type: 'network', title: 'เชื่อมต่อไม่ได้', body: 'ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง', action: 'ลองอีกครั้ง' };
+        // Specific business rejections must retain their existing handlers before HTTP fallback.
+        if (status === 409 || status === 429 || /^(?:validation_|invalid_payload|invalid_quantity|invalid_location|invalid_expiry|stale_count|conflict|duplicate_|already_|rate_limit|too_many_requests)/.test(reason)) return null;
+        if (status === 401) return uiReadErrorState({ reason: 'invalid_session' });
+        if (status === 403) return uiReadErrorState({ reason: 'permission_denied' });
+        if (status >= 500 || ['internal_error', 'server_error', 'service_unavailable', 'unknown_error'].includes(reason)) return { type: 'server', title: 'ระบบขัดข้องชั่วคราว', body: 'ลองอีกครั้งในอีกสักครู่ ถ้ายังไม่ได้ให้แจ้งผู้ดูแล', action: 'ลองอีกครั้ง' };
+        if (error?.name === 'TypeError') return uiReadErrorState({ reason: 'offline' });
+        return null;
+    }
+    function poReadFailure(error) {
+        const state = uiReadErrorState(error);
+        const result = { success:false, reason:error?.reason || error?.code || '', status:error?.status || 0, name:error?.name || '', message:state ? state.title + ' — ' + state.body : 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง' };
+        if (state?.type === 'session') { window.appSession = null; showPoAuthFailure(error); }
+        return result;
+    }
+    function showPoAuthFailure(error) {
+        const state = error?.reason === 'mandatory_password_change_required'
+            ? {title:'ต้องเปลี่ยนรหัสผ่านก่อนใช้งาน',body:'เปลี่ยนรหัสผ่านเริ่มต้นใน BUYMORETH ก่อนใช้งาน',action:'กลับหน้าหลัก',type:'session'}
+            : uiReadErrorState(error) || {title:'ตรวจสอบสิทธิ์ไม่สำเร็จ',body:'กรุณาลองอีกครั้ง ถ้ายังไม่ได้ให้แจ้งผู้ดูแล',action:'ลองอีกครั้ง',type:'server'};
+        UI.showError(state.body);
+        document.getElementById('po-auth-error-title').innerText = state.title;
+        const button = document.getElementById('po-auth-error-action'); button.innerText = state.action || 'กลับหน้าหลัก';
+        button.onclick = state.type === 'network' || state.type === 'server' ? () => AuthGuard.init() : () => state.type === 'session' || state.type === 'changed' ? window.AkraModule.authRequired(APP_CONFIG.PORTAL_URL) : window.AkraModule.home(APP_CONFIG.PORTAL_URL);
+        if (window.AkraModule?.embedded && (state.type === 'session' || state.type === 'changed')) window.AkraModule.authRequired(APP_CONFIG.PORTAL_URL);
+    }
     var UI = {
         showLoading: () => {
             document.body.classList.add('loading-active');
@@ -1200,20 +1276,46 @@
         } catch (e) { return null; }
     }
 
+    var poAuthAttempt = 0, poPendingVerification = null;
+    function poAuthRawSession() { try { return localStorage.getItem(APP_CONFIG.STORAGE_KEY); } catch (_) { return null; } }
+    function invalidatePOAuthStartup() { ++poAuthAttempt; poPendingVerification = null; }
+    window.addEventListener('storage', event => {
+        if (event.key !== null && ![APP_CONFIG.STORAGE_KEY, 'akra_main_session', 'akra_session_token'].includes(event.key)) return;
+        if (event.key !== null && event.oldValue === event.newValue) return;
+        invalidatePOAuthStartup();
+        if (!window.appSession) showPoAuthFailure({reason:window.AkraModule?.isMainSignedOut?.() ? 'main_signed_out' : 'session_changed'});
+    });
+
     var AuthGuard = {
         init: async () => {
-            const isVersionOk = await checkAppVersion();
-            if (!isVersionOk) return;
-            AppVersionGuard.start({ current: CURRENT_VERSION, readActions: ['getInitialData', 'getProducts', 'getVendorDeliveryInsights'] });
-
-            lucide.createIcons();
-            UI.showLoading();
-
+            const attempt = ++poAuthAttempt;
+            const embedded = !!window.AkraModule?.embedded, mainStamp = window.AkraModule?.sessionStamp?.();
+            let expectedRaw = poAuthRawSession(), boundOwner = window.appSession, boundToken = boundOwner?.token, tokenToVerify = '', embeddedToken, tokenCaptured = false;
+            const current = () => {
+                try { return attempt === poAuthAttempt && embedded === !!window.AkraModule?.embedded && window.appSession === boundOwner && boundOwner?.token === boundToken
+                    && expectedRaw === poAuthRawSession() && mainStamp === window.AkraModule?.sessionStamp?.()
+                    && (!embedded || !tokenCaptured || embeddedToken === window.AkraModule.getToken()); } catch (_) { return false; }
+            };
             try {
+                if (poPendingVerification && (poPendingVerification.savedRaw !== expectedRaw || poPendingVerification.mainStamp !== mainStamp)) poPendingVerification = null;
+                if (window.AkraModule?.isMainSignedOut?.()) { poPendingVerification = null; throw new Error('main_signed_out'); }
+                const ssoToken = window.AkraModule?.getToken() || new URLSearchParams(window.location.search).get('sso');
+                embeddedToken = ssoToken; tokenCaptured = true;
+
+                tokenToVerify = ssoToken || (!embedded && poPendingVerification?.token) || expectedRaw;
+                if (!embedded && tokenToVerify) poPendingVerification = {token:tokenToVerify,savedRaw:expectedRaw,mainStamp};
+                else if (embedded) poPendingVerification = null;
+                const isVersionOk = await checkAppVersion();
+                if (!current() || !isVersionOk) return;
+                AppVersionGuard.start({ current: CURRENT_VERSION, readActions: ['getInitialData', 'getProducts', 'getVendorDeliveryInsights'] });
+                lucide.createIcons();
+                UI.showLoading();
                 if (window.AkraModule?.embedded) {
                     const user = await window.AkraModule.verifySession('app-tracking');
-                    window.appSession = { ...user, tokenVersion: 2 };
-                    if (!hasPoAccess(window.appSession)) throw new Error('permission_denied');
+                    if (!current()) return;
+                    const session = { ...user, tokenVersion: 2 };
+                    if (!hasPoAccess(session)) throw new Error('permission_denied');
+                    boundOwner = window.appSession = session; boundToken = session.token; poPendingVerification = null;
                     window.currentUser = user.name;
                     initialDataPrefetch = readApiCall('getInitialData', { includeProducts: false, includeCompleted: false });
                     UI.showApp(user.name);
@@ -1221,29 +1323,20 @@
                     await loadInitialData();
                     return;
                 }
-                const urlParams = new URLSearchParams(window.location.search);
-                const ssoToken = window.AkraModule?.getToken() || urlParams.get('sso');
-                let savedToken = localStorage.getItem(APP_CONFIG.STORAGE_KEY);
-
-                let tokenToVerify = null;
+                if (ssoToken) { try { window.history.replaceState({}, document.title, window.location.pathname); } catch (_) {} }
                 const isPreviewEnv = window.AkraModule?.isLocalPreview() === true;
-
-                if (ssoToken) {
-                    tokenToVerify = ssoToken;
-                    try { window.history.replaceState({}, document.title, window.location.pathname); } catch(e) {}
-                } else if (savedToken) {
-                    tokenToVerify = savedToken;
-                }
 
                 if (!tokenToVerify && isPreviewEnv) {
                     console.log("เข้าสู่โหมดทดสอบ (Preview Mode)");
                     window.currentUser = "โหมดทดสอบ (Preview)";
-                    window.appSession = {
+                    boundOwner = window.appSession = {
                         id: "preview-user",
                         name: window.currentUser,
                         roles: ["ADMIN", "PURCHASER", "SUPERVISOR"],
                         perms: { "app-po": ["createPO", "approvePR", "closePO"], "app-tracking": ["createPO", "approvePR", "closePO"] }
                     };
+                    boundToken = boundOwner.token;
+                    poPendingVerification = null;
                     UI.showApp(window.currentUser);
                     AuthGuard.bindEvents();
                     await loadInitialData();
@@ -1257,38 +1350,44 @@
 
                 // Current Main authorization is required before any domain read or cache render.
                 const user = await window.AkraModule.verifySession('app-tracking', tokenToVerify);
-                if (localStorage.getItem(APP_CONFIG.STORAGE_KEY) !== savedToken) throw new Error('session_changed');
+                if (!current()) return;
                 const session = { ...user, roles: normalizeRoles(user.roles), token: tokenToVerify, tokenVersion: 2 };
                 if (user.mustChangePassword === true || !hasPoAccess(session)) throw new Error('permission_denied');
-                window.appSession = session;
+                boundOwner = window.appSession = session; boundToken = session.token; poPendingVerification = null;
                 window.currentUser = session.name;
                 try { localStorage.setItem(APP_CONFIG.STORAGE_KEY, tokenToVerify); } catch(e) {}
+                expectedRaw = poAuthRawSession();
                 initialDataPrefetch = readApiCall('getInitialData', { includeProducts: false, includeCompleted: false });
                 UI.showApp(session.name);
                 AuthGuard.bindEvents();
                 await loadInitialData();
 
             } catch (error) {
+                if (!current()) return;
+                const failure = uiReadErrorState(error);
+                if (!tokenToVerify || embedded || (failure && !['network','server'].includes(failure.type)) || error?.reason === 'mandatory_password_change_required') poPendingVerification = null;
                 console.error("Auth Error:", error);
                 window.appSession = null;
-                UI.showError("ตรวจสอบสิทธิ์ไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่ผ่าน BUYMORETH");
+                showPoAuthFailure(error);
             }
         },
 
         bindEvents: () => {
             window.AkraModule?.watchSession?.({appId:'app-tracking', user:window.appSession, token:window.appSession?.token,
-                invalidated:() => { window.appSession = null; UI.showError('เซสชัน BUYMORETH เปลี่ยนแล้ว กรุณาเปิดแอปจาก BUYMORETH ใหม่'); },
+                invalidated:() => { invalidatePOAuthStartup(); window.appSession = null; showPoAuthFailure({reason:'session_changed'}); },
                 refreshed:token => { if (window.appSession) window.appSession.token = token; }
             });
             if (!window.AkraModule?.embedded) window.addEventListener('storage', event => {
                 if (event.key !== null && event.key !== APP_CONFIG.STORAGE_KEY) return;
                 if (event.key !== null && event.oldValue === event.newValue) return;
+                invalidatePOAuthStartup();
                 window.appSession = null;
-                UI.showError('บัญชีในแท็บอื่นเปลี่ยนแล้ว กรุณาเข้าสู่ระบบใหม่ผ่าน BUYMORETH');
+                showPoAuthFailure({reason:'session_changed'});
             });
             const logoutBtn = document.getElementById('logout-btn');
             if(logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
+                    invalidatePOAuthStartup();
                     window.appSession = null;
                     localStorage.removeItem(APP_CONFIG.STORAGE_KEY);
                     window.AkraModule.home(APP_CONFIG.PORTAL_URL);
@@ -1349,6 +1448,22 @@
         return '';
     }
 
+    function displayPoDate(value) {
+        const text = String(value || '').trim();
+        if (!text) return '-';
+        let year, month, day;
+        const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const legacy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (iso) [, year, month, day] = iso;
+        else if (legacy) [, day, month, year] = legacy;
+        else return text;
+        year = Number(year); month = Number(month); day = Number(day);
+        if (legacy && year >= 2400) year -= 543;
+        if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return text;
+        const date = new Date(Date.UTC(year, month - 1, day));
+        if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return text;
+        return new Intl.DateTimeFormat('th-TH-u-ca-buddhist', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
+    }
     function can(perm) {
         if (!window.appSession) return false;
         var perms = getPoPerms(window.appSession);
@@ -1366,18 +1481,150 @@
         document.getElementById('data-loader-spinner').classList.remove('hidden');
         document.getElementById('data-loader-retry').classList.add('hidden');
         const loader = document.getElementById('data-loader');
+        loader.setAttribute?.('role', 'status');
         if (loader.setAttribute) loader.setAttribute('aria-busy', 'true');
         loader.classList.remove('hidden');
         loader.classList.add('flex');
     }
-    function showDataLoadFailure(message) {
-        document.getElementById('data-loader-text').innerText = message;
-        document.getElementById('data-loader-spinner').classList.add('hidden');
-        document.getElementById('data-loader-retry').classList.remove('hidden');
-        const loader = document.getElementById('data-loader');
-        if (loader.setAttribute) loader.setAttribute('aria-busy', 'false');
-        loader.classList.remove('hidden');
-        loader.classList.add('flex');
+    var poReadRetry = null;
+    function retryPoRead() { const retry = poReadRetry; poReadRetry = null; if (retry) return retry(); }
+    var poRegionReads = {
+        active: { noticeIds: ['po-read-error'], generation: 0 },
+        catalog: { noticeIds: ['po-products-error', 'po-create-products-error'], generation: 0 },
+        match: { noticeIds: ['po-match-error'], generation: 0 },
+        apv: { noticeIds: ['po-apv-error'], generation: 0 }
+    };
+    function capturePoReadOwner() {
+        const owner = window.appSession;
+        return { owner, token: getSessionToken(), identityId: owner?.identityId, sessionVersion: owner?.sessionVersion,
+            authorizationRevision: owner?.authorizationRevision, stamp: window.AkraModule?.sessionStamp?.() };
+    }
+    function isCurrentPoReadOwner(scope) {
+        try {
+            return !!scope?.owner && window.appSession === scope.owner && getSessionToken() === scope.token
+                && window.appSession?.identityId === scope.identityId && window.appSession?.sessionVersion === scope.sessionVersion
+                && window.appSession?.authorizationRevision === scope.authorizationRevision && window.AkraModule?.sessionStamp?.() === scope.stamp;
+        } catch (_) { return false; }
+    }
+    function clearPoRegionReadFailure(region) {
+        const state = poRegionReads[region];
+        state.failure = null; state.retry = null; state.retryCurrent = null;
+        state.noticeIds.forEach(id => document.getElementById(id)?.classList?.add('hidden'));
+    }
+    function hidePoDeniedReadData(region) {
+        const hide = id => { const node = document.getElementById(id); if (node) node.innerHTML = ''; };
+        const counts = { active: ['badge-pr', 'badge-po', 'po-metric-pr', 'po-metric-po'], catalog: [],
+            match: ['badge-match', 'po-metric-match'], apv: ['badge-apv', 'po-metric-apv'] }[region];
+        counts.forEach(id => { const node = document.getElementById(id); if (node) node.innerText = '—'; });
+        if (region === 'active') {
+            appData.prList = []; appData.pendingPOs = []; appData.vendors = []; groupedPOs = []; poActiveDataRendered = false;
+            removeCache('CACHE_PO_ACTIVE_V3'); hide('pr-container'); hide('po-container');
+        } else if (region === 'catalog') {
+            appData.products = []; poProductsLoaded = false; removeCache('CACHE_PO_PRODUCTS_V4');
+            document.querySelectorAll('.suggestion-box').forEach(node => { node.innerHTML = ''; node.classList.add('hidden'); });
+            hide('vendor-suggestions');
+        } else if (region === 'match') {
+            appData.grCompleted = []; groupedMatchData = {}; poMatchLoaded = false; hide('match-container');
+        } else {
+            appData.apvList = []; groupedAPVData = {}; poApvLoaded = false; hide('apv-container');
+        }
+    }
+    function retryPoRegionRead(region) {
+        const state = poRegionReads[region];
+        if (!state || (state.promise && state.requestCurrent?.()) || !state.retry || !isCurrentPoReadOwner(state.scope) || !state.retryCurrent?.()) return;
+        const retry = state.retry;
+        if (uiReadErrorState(state.failure)?.type === 'permission') state.retry = null;
+        return retry();
+    }
+    function showPoRegionReadFailure(region, error, retry, confirmedWrite, current) {
+        const state = poRegionReads[region];
+        const failure = uiReadErrorState(error) || { title: 'โหลดข้อมูลไม่สำเร็จ', body: 'กรุณาลองอ่านข้อมูลอีกครั้ง', action: 'ลองอีกครั้ง', type: 'read' };
+        if (['changed', 'session', 'cancelled'].includes(failure.type)) return;
+        if (failure.type === 'permission') hidePoDeniedReadData(region);
+        if (region === 'match' && !appData.grCompleted?.length) document.getElementById('match-container').innerHTML = '';
+        if (region === 'apv' && !appData.apvList?.length) document.getElementById('apv-container').innerHTML = '';
+        state.failure = error;
+        state.retryCurrent = current;
+        state.retry = failure.type === 'permission' ? () => window.AkraModule.home(APP_CONFIG.PORTAL_URL) : retry;
+        const label = { active: 'ข้อมูลบิลล่าสุด', catalog: 'รายชื่อสินค้า', match: 'ข้อมูลกระทบยอด', apv: 'ข้อมูลใบตั้งหนี้' }[region];
+        const title = (confirmedWrite ? 'บันทึกสำเร็จแล้ว · ' : '') + label + ': ' + failure.title;
+        state.noticeIds.forEach(id => {
+            const node = document.getElementById(id); if (!node) return;
+            node.innerHTML = '<strong>' + esc(title) + '</strong><p>' + esc(failure.body) + '</p><button type="button" onclick="retryPoRegionRead(\'' + region + '\')">' + esc(failure.action) + '</button>';
+            node.classList.remove('hidden');
+        });
+    }
+    function readPoRegion(region, read, apply, retry, confirmedWrite = false) {
+        const state = poRegionReads[region];
+        if (state.promise && state.requestCurrent?.() && !(region === 'active' && confirmedWrite)) return state.promise;
+        const retryStillOwned = state.retry && state.retryCurrent?.() && isCurrentPoReadOwner(state.scope);
+        const scope = capturePoReadOwner();
+        if (!scope.owner || !scope.token) return Promise.resolve(false);
+        state.scope = scope;
+        const generation = ++state.generation;
+        const activeGeneration = region === 'active' ? ++poActiveLoadGeneration : null;
+        const secondaryGeneration = poSecondaryDataGeneration;
+        const current = () => state.generation === generation && isCurrentPoReadOwner(scope)
+            && (region !== 'active' || activeGeneration === poActiveLoadGeneration)
+            && (!['match', 'apv'].includes(region) || secondaryGeneration === poSecondaryDataGeneration);
+        const retryCurrent = () => state.generation === generation && isCurrentPoReadOwner(scope)
+            && (region !== 'active' || activeGeneration === poActiveLoadGeneration);
+        if (retryStillOwned) state.retryCurrent = retryCurrent;
+        state.requestCurrent = current;
+        state.noticeIds.forEach(id => {
+            const node = document.getElementById(id); node?.setAttribute?.('aria-busy', 'true');
+            const button = node?.querySelector?.('button'); if (button) button.disabled = true;
+        });
+        state.promise = (async () => {
+            let readSucceeded = false;
+            try {
+                const result = await read();
+                if (!current()) return false;
+                if (result?.success) {
+                    readSucceeded = true; apply(result); clearPoRegionReadFailure(region); return true;
+                }
+                showPoRegionReadFailure(region, result, retry, confirmedWrite, retryCurrent); return false;
+            } catch (error) {
+                if (current()) showPoRegionReadFailure(region, readSucceeded ? {reason:'internal_error'} : poReadFailure(error), retry, confirmedWrite, retryCurrent);
+                return false;
+            } finally {
+                if (state.generation === generation) {
+                    state.promise = null;
+                    state.requestCurrent = null;
+                    state.noticeIds.forEach(id => {
+                        const node = document.getElementById(id); node?.setAttribute?.('aria-busy', 'false');
+                        const button = node?.querySelector?.('button'); if (button) button.disabled = false;
+                    });
+                }
+            }
+        })();
+        return state.promise;
+    }
+    function showDataLoadFailure(message, keepBlocking = false) {
+        if (typeof message !== 'string' && uiReadErrorState(message)?.type === 'permission') hidePoDeniedReadData('active');
+        // A saved write whose authoritative read-back failed keeps the existing stale-edit guard.
+        if (typeof message === 'string' || keepBlocking) {
+            const failure = typeof message === 'string' ? null : uiReadErrorState(message);
+            if (failure && ['changed','session','cancelled'].includes(failure.type)) { hideDataLoading(); return; }
+            document.getElementById('data-loader-text').innerText = typeof message === 'string' ? message : message.message || 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองอีกครั้ง';
+            document.getElementById('data-loader-spinner').classList.add('hidden');
+            const retry = document.getElementById('data-loader-retry');
+            retry.classList.remove('hidden');
+            retry.innerText = failure?.action || 'ลองอีกครั้ง';
+            retry.onclick = failure?.type === 'permission' ? () => window.AkraModule.home(APP_CONFIG.PORTAL_URL) : () => loadInitialData(true);
+            const loader = document.getElementById('data-loader');
+            loader.setAttribute?.('aria-busy', 'false');
+            loader.setAttribute?.('role', 'alert');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+            return;
+        }
+        hideDataLoading();
+        const state = typeof message === 'string' ? { title:'โหลดข้อมูลล่าสุดไม่สำเร็จ', body:message, action:'ลองอีกครั้ง', type:'read' } : uiReadErrorState(message) || { title:'โหลดข้อมูลไม่สำเร็จ', body:message?.message || 'กรุณาลองอีกครั้ง', action:'ลองอีกครั้ง', type:'read' };
+        if (['changed','session','cancelled'].includes(state.type)) return;
+        const notice = document.getElementById('po-read-error');
+        notice.innerHTML = '<strong>' + esc(state.title) + '</strong><p>' + esc(state.body) + '</p><button type="button" onclick="retryPoRead()">' + esc(state.action) + '</button>';
+        poReadRetry = state.type === 'permission' ? () => window.AkraModule.home(APP_CONFIG.PORTAL_URL) : () => loadInitialData(true);
+        notice.classList.remove('hidden');
     }
     function hideDataLoading() {
         const loader = document.getElementById('data-loader');
@@ -1402,17 +1649,35 @@
         setTimeout(() => { t.classList.add('closing'); t.addEventListener('animationend', () => t.remove()); }, 4000);
     }
 
+    var confirmReturnFocus = null, confirmFocusOwner = null;
     function showConfirmModal(message, callback) {
         document.getElementById('confirm-message').innerText = message;
         confirmCallback = callback;
         const m = document.getElementById('custom-confirm-modal');
+        confirmReturnFocus = document.activeElement;
+        confirmFocusOwner = [window.appSession, getSessionToken(), window.AkraModule?.sessionStamp?.()];
         m.classList.remove('hidden'); m.classList.add('flex');
+        document.getElementById('btn-confirm-cancel')?.focus();
     }
     function closeConfirmModal() {
         const m = document.getElementById('custom-confirm-modal');
         m.classList.add('hidden'); m.classList.remove('flex');
         confirmCallback = null;
+        const current = [window.appSession, getSessionToken(), window.AkraModule?.sessionStamp?.()];
+        if (confirmFocusOwner?.every((value, index) => value === current[index]) && confirmReturnFocus?.isConnected !== false) confirmReturnFocus?.focus?.();
+        confirmReturnFocus = null; confirmFocusOwner = null;
     }
+    document.addEventListener('keydown', event => {
+        const modal = document.getElementById('custom-confirm-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        if (event.key === 'Escape') { event.preventDefault(); closeConfirmModal(); return; }
+        if (event.key !== 'Tab') return;
+        const buttons = Array.from(modal.querySelectorAll('button')).filter(button => !button.disabled);
+        const edge = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+        if (buttons.length && (document.activeElement === edge || !buttons.includes(document.activeElement))) {
+            event.preventDefault(); (event.shiftKey ? buttons[buttons.length - 1] : buttons[0]).focus();
+        }
+    });
     document.getElementById('btn-confirm-action')?.addEventListener('click', () => {
         if(confirmCallback) confirmCallback();
         closeConfirmModal();
@@ -1498,9 +1763,10 @@
                 }, token);
                 hideDataLoading();
                 showNotification(result.message || 'บันทึก Direct PO เรียบร้อยแล้ว', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             } else if (action === "updatePO") {
+                const updateOwner = capturePoReadOwner();
                 result = await AkraSupabasePO.updatePO({
                     poId: payload.poId || '',
                     refPrUid: payload.refPrUid || '',
@@ -1518,12 +1784,17 @@
                         remark: it.remark || ''
                     }))
                 }, token);
-                if (await loadInitialDataInBackground(true)) {
+                const readback = loadInitialDataInBackground(true, result?.success === true);
+                const readbackGeneration = poActiveLoadGeneration;
+                const reloaded = await readback;
+                if (!isCurrentPoReadOwner(updateOwner) || readbackGeneration !== poActiveLoadGeneration) return result;
+                if (reloaded) {
                     hideDataLoading();
                     showNotification(result.message || 'อัปเดต PO เรียบร้อยแล้ว', 'success');
                 } else {
                     poActiveDataRendered = false;
-                    showDataLoadFailure('บันทึก PO แล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองโหลดอีกครั้งก่อนแก้ไขต่อ');
+                    const failure = poRegionReads.active.failure;
+                    showDataLoadFailure({ ...failure, message: 'บันทึก PO แล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ · ' + (failure?.message || 'กรุณาลองอ่านข้อมูลอีกครั้งก่อนแก้ไขต่อ') }, true);
                 }
                 return result;
             } else if (action === "deletePO" || action === "deleteBill") {
@@ -1532,14 +1803,14 @@
                 removeDeletedBillFromLocalData(payload);
                 hideDataLoading();
                 showNotification(result.message || 'ลบบิลเรียบร้อยแล้ว', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             } else if (action === "cancelUnreceivedPO") {
                 removeCache("CACHE_PO_ACTIVE_V3");
                 result = await AkraSupabasePO.cancelUnreceivedPO(payload, token);
                 hideDataLoading();
                 showNotification(result.message || 'ยกเลิกยอดที่ยังไม่ได้รับเรียบร้อยแล้ว', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             } else if (action === "approvePR") {
                 result = await AkraSupabasePO.approvePR({
@@ -1564,7 +1835,7 @@
                 processDataAndRender();
                 hideDataLoading();
                 showNotification(result.message || 'อนุมัติ PR สำเร็จ', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             } else if (action === "rejectPR") {
                 result = await AkraSupabasePO.rejectPR({
@@ -1576,7 +1847,7 @@
                 processDataAndRender();
                 hideDataLoading();
                 showNotification(result.message || 'ปฏิเสธ PR สำเร็จ', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             } else if (action === "closePO") {
                 result = await AkraSupabasePO.closePO({
@@ -1592,7 +1863,7 @@
                 processDataAndRender();
                 hideDataLoading();
                 showNotification(result.message || 'ส่งฝ่าย APV สำเร็จ', 'success');
-                loadInitialDataInBackground(true);
+                loadInitialDataInBackground(true, result?.success === true);
                 return result;
             }
             throw new Error('unknown_action:' + action);
@@ -1649,9 +1920,13 @@
             return { success: false, message: 'พบเวอร์ชันใหม่ กรุณารีโหลดก่อนทำรายการ' };
         }
         const token = getSessionToken();
+        const owner = window.appSession;
+        const current = () => { try { return window.appSession === owner && getSessionToken() === token; } catch (_) { return false; } };
         try {
             if (action === 'getInitialData') {
                 const supa = await AkraSupabasePO.getInitialData(payload || {}, token);
+                if (!current()) return poReadFailure({reason:'session_changed'});
+                if (supa?.success === false || supa?.status === 'error') return poReadFailure(supa);
                 const data = (supa && supa.data) || supa || {};
                 return {
                     success: true,
@@ -1663,6 +1938,8 @@
                 };
             } else if (action === 'getProducts') {
                 const res = await AkraSupabasePO.getProducts(payload || {}, token);
+                if (!current()) return poReadFailure({reason:'session_changed'});
+                if (res?.success === false || res?.status === 'error') return poReadFailure(res);
                 const data = (res && res.data) || res || {};
                 const prods = data.products || [];
                 const vendorSet = new Set();
@@ -1672,20 +1949,23 @@
                 });
                 return { success: true, products: prods, vendors: Array.from(vendorSet) };
             } else if (action === 'getDeliveryInsights' || action === 'getVendorDeliveryInsights') {
-                return await AkraSupabasePO.getDeliveryInsights(payload || {}, token);
+                const result = await AkraSupabasePO.getDeliveryInsights(payload || {}, token);
+                if (!current()) return poReadFailure({reason:'session_changed'});
+                return result?.success === false || result?.status === 'error' ? poReadFailure(result) : result;
             }
             throw new Error('unknown_read_action:' + action);
         } catch (error) {
             console.warn('PO read API failed:', { action, error: error.message || String(error) });
-            return { success: false, message: error.message || 'ไม่สามารถดึงข้อมูลจากระบบได้ กรุณาลองใหม่' };
+            if (!current()) return poReadFailure({reason:'session_changed'});
+            return poReadFailure(error);
         }
     }
 
 
 
-    async function loadProductsBackground() {
-        if (poProductsLoaded && appData.products && appData.products.length > 4000) return;
-        const cached = getCache('CACHE_PO_PRODUCTS_V4', PO_PRODUCTS_CACHE_TTL);
+    async function loadProductsBackground(force = false) {
+        if (!force && poProductsLoaded && appData.products && appData.products.length > 4000) return;
+        const cached = force ? null : getCache('CACHE_PO_PRODUCTS_V4', PO_PRODUCTS_CACHE_TTL);
         if (cached && cached.products && cached.products.length > 4000) {
             appData.products = cached.products || [];
             if (cached.vendors && cached.vendors.length > 0) {
@@ -1696,9 +1976,7 @@
             lucide.createIcons();
             return;
         }
-        try {
-            const result = await readApiCall('getProducts', {});
-            if (result.success && result.products && result.products.length > 0) {
+        return readPoRegion('catalog', () => readApiCall('getProducts', force ? { bypassCache: true } : {}), result => {
                 setCache('CACHE_PO_PRODUCTS_V4', result);
                 appData.products = result.products || [];
                 if (result.vendors && result.vendors.length > 0) {
@@ -1707,8 +1985,7 @@
                 poProductsLoaded = true;
                 renderTab1_PR();
                 lucide.createIcons();
-            }
-        } catch(e) { console.warn('Products background load error', e); }
+        }, () => loadProductsBackground(true));
     }
 
     function scheduleProductsBackground() {
@@ -1717,15 +1994,11 @@
         else setTimeout(load, 0);
     }
 
-    async function ensureMatchLoaded() {
-        if (poMatchLoaded) return;
-        const requestGeneration = poSecondaryDataGeneration;
+    async function ensureMatchLoaded(force = false) {
+        if (poMatchLoaded && !force) return;
         const matchContainer = document.getElementById('match-container');
-        const loadingHtml = '<p class="text-gray-400 text-center py-10">กำลังโหลดข้อมูล...</p>';
-        if (matchContainer) matchContainer.innerHTML = loadingHtml;
-        const result = await readApiCall('getInitialData', { includeProducts: false, includeCompleted: true, includeMatch: true, includeAPV: false });
-        if (requestGeneration !== poSecondaryDataGeneration) return;
-        if (result.success) {
+        if (matchContainer && !appData.grCompleted?.length) matchContainer.innerHTML = '<p role="status" class="text-gray-500 text-center py-10">กำลังโหลดข้อมูล...</p>';
+        return readPoRegion('match', () => readApiCall('getInitialData', { includeProducts: false, includeCompleted: true, includeMatch: true, includeAPV: false }), result => {
             appData.grCompleted = result.grCompleted || [];
             poMatchLoaded = true;
             groupGRData();
@@ -1734,20 +2007,14 @@
             if (matchMetric) matchMetric.innerText = Object.keys(groupedMatchData).length;
             renderTab3_Match();
             lucide.createIcons();
-        } else if (matchContainer) {
-            matchContainer.innerHTML = '<p class="text-red-400 text-center py-10">โหลดข้อมูลล้มเหลว กรุณารีเฟรช</p>';
-        }
+        }, () => ensureMatchLoaded(true));
     }
 
-    async function ensureApvLoaded() {
-        if (poApvLoaded) return;
-        const requestGeneration = poSecondaryDataGeneration;
+    async function ensureApvLoaded(force = false) {
+        if (poApvLoaded && !force) return;
         const apvContainer = document.getElementById('apv-container');
-        const loadingHtml = '<p class="text-gray-400 text-center py-10">กำลังโหลดข้อมูล...</p>';
-        if (apvContainer) apvContainer.innerHTML = loadingHtml;
-        const result = await readApiCall('getInitialData', { includeProducts: false, includeCompleted: true, includeMatch: false, includeAPV: true });
-        if (requestGeneration !== poSecondaryDataGeneration) return;
-        if (result.success) {
+        if (apvContainer && !appData.apvList?.length) apvContainer.innerHTML = '<p role="status" class="text-gray-500 text-center py-10">กำลังโหลดข้อมูล...</p>';
+        return readPoRegion('apv', () => readApiCall('getInitialData', { includeProducts: false, includeCompleted: true, includeMatch: false, includeAPV: true }), result => {
             appData.apvList = result.apvList || [];
             poApvLoaded = true;
             groupAPVData();
@@ -1756,30 +2023,32 @@
             if (apvMetric) apvMetric.innerText = Object.keys(groupedAPVData).length;
             renderTab4_APV();
             lucide.createIcons();
-        } else if (apvContainer) {
-            apvContainer.innerHTML = '<p class="text-red-400 text-center py-10">โหลดข้อมูลล้มเหลว กรุณารีเฟรช</p>';
-        }
+        }, () => ensureApvLoaded(true));
     }
 
-    async function loadInitialDataInBackground(bypassCache = false) {
-        try {
-            const result = await readApiCall('getInitialData', { includeProducts: false, includeCompleted: false, bypassCache });
-            if (result.success) {
+    async function loadInitialDataInBackground(bypassCache = false, confirmedWrite = false) {
+        return readPoRegion('active', () => readApiCall('getInitialData', { includeProducts: false, includeCompleted: false, bypassCache }), result => {
                 setCache('CACHE_PO_ACTIVE_V3', result);
                 appData.prList = result.prList;
                 appData.pendingPOs = result.pendingPOs;
                 appData.vendors = result.vendors;
                 processDataAndRender();
-                return true;
-            }
-        } catch(e) { console.warn('Background Data Sync Error', e); }
-        return false;
+                poActiveDataRendered = true;
+                if (confirmedWrite) hideDataLoading();
+        }, () => loadInitialDataInBackground(true, confirmedWrite), confirmedWrite);
     }
 
     async function loadInitialData(isManualRefresh = false) {
+        document.getElementById('po-read-error')?.classList.add('hidden');
         const activeLoadGeneration = ++poActiveLoadGeneration;
         if (isManualRefresh) {
             poSecondaryDataGeneration += 1;
+            ['match', 'apv'].forEach(region => {
+                const state = poRegionReads[region];
+                if (state.promise && !state.requestCurrent?.()) state.noticeIds.forEach(id => {
+                    const button = document.getElementById(id)?.querySelector?.('button'); if (button) button.disabled = false;
+                });
+            });
             poMatchLoaded = false;
             poApvLoaded = false;
             appData.grCompleted = [];
@@ -1822,20 +2091,18 @@
                 processDataAndRender();
                 poActiveDataRendered = true;
                 if (!poProductsLoaded || !appData.products || appData.products.length <= 4000) scheduleProductsBackground();
-            } else if (!cacheUsable) {
-                loadFailureMessage = 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง';
-                showNotification('โหลดข้อมูลล้มเหลว: ' + result.message, 'error');
+            } else {
+                loadFailureMessage = result;
             }
         } catch(e) {
             if (activeLoadGeneration === poActiveLoadGeneration && !cacheUsable) {
-                loadFailureMessage = 'ไม่สามารถเชื่อมต่อเพื่อโหลดข้อมูล กรุณาลองอีกครั้ง';
-                showNotification('ไม่สามารถดึงข้อมูลจากระบบได้', 'error');
+                loadFailureMessage = poReadFailure(e);
             }
         }
 
-        if (activeLoadGeneration === poActiveLoadGeneration && (!cacheUsable || isManualRefresh)) {
-            if (loadFailureMessage && !cacheUsable) showDataLoadFailure(loadFailureMessage);
-            else hideDataLoading();
+        if (activeLoadGeneration === poActiveLoadGeneration) {
+            if (loadFailureMessage) showDataLoadFailure(loadFailureMessage, isManualRefresh && !poActiveDataRendered);
+            else if (!cacheUsable || isManualRefresh) hideDataLoading();
         }
     }
 
@@ -1860,11 +2127,12 @@
             if (matchMetric) matchMetric.innerText = Object.keys(groupedMatchData).length;
             renderTab3_Match();
         } else {
-            document.getElementById('badge-match').innerText = '0';
+            const denied = isCurrentPoReadOwner(poRegionReads.match.scope) && uiReadErrorState(poRegionReads.match.failure)?.type === 'permission';
+            document.getElementById('badge-match').innerText = denied ? '—' : '0';
             const matchMetric = document.getElementById('po-metric-match');
-            if (matchMetric) matchMetric.innerText = '0';
+            if (matchMetric) matchMetric.innerText = denied ? '—' : '0';
             const mc = document.getElementById('match-container');
-            if (mc) mc.innerHTML = '<p class="text-gray-400 text-center py-10">กำลังโหลด — คลิกแท็บเพื่อโหลดข้อมูล</p>';
+            if (mc) mc.innerHTML = denied ? '' : '<p class="text-gray-400 text-center py-10">กำลังโหลด — คลิกแท็บเพื่อโหลดข้อมูล</p>';
         }
 
         if (poApvLoaded) {
@@ -1874,11 +2142,12 @@
             if (apvMetric) apvMetric.innerText = Object.keys(groupedAPVData).length;
             renderTab4_APV();
         } else {
-            document.getElementById('badge-apv').innerText = '0';
+            const denied = isCurrentPoReadOwner(poRegionReads.apv.scope) && uiReadErrorState(poRegionReads.apv.failure)?.type === 'permission';
+            document.getElementById('badge-apv').innerText = denied ? '—' : '0';
             const apvMetric = document.getElementById('po-metric-apv');
-            if (apvMetric) apvMetric.innerText = '0';
+            if (apvMetric) apvMetric.innerText = denied ? '—' : '0';
             const ac = document.getElementById('apv-container');
-            if (ac) ac.innerHTML = '<p class="text-gray-400 text-center py-10">กำลังโหลด — คลิกแท็บเพื่อโหลดข้อมูล</p>';
+            if (ac) ac.innerHTML = denied ? '' : '<p class="text-gray-400 text-center py-10">กำลังโหลด — คลิกแท็บเพื่อโหลดข้อมูล</p>';
         }
 
         setupVendorAutocomplete();
@@ -2369,6 +2638,7 @@
         const submitBtn = document.getElementById("btn-submit-direct-po");
         submitBtn.disabled = true;
         const originalBtnText = submitBtn.innerText;
+        const submitOwner = capturePoReadOwner();
         submitBtn.innerHTML = '<div class="spinner spinner-sm mr-2 border-t-white"></div> บันทึก...';
         isSubmittingDirectPO = true;
 
@@ -2378,7 +2648,7 @@
                 const oldPoUids = JSON.parse(form.dataset.oldUids);
                 const poNumber = form.dataset.poNumber;
                 res = await apiAction("updatePO", { poId: form.dataset.poId || '', oldPoUids, vendor, warehouse, poNumber, expectedDate, remark, items, prUid, refPrUid });
-                if (res && res.success) {
+                if (res && res.success && isCurrentPoReadOwner(submitOwner)) {
                     closeCreatePoModal();
                 }
             } else if (refPrRow) {
@@ -2386,12 +2656,12 @@
                 res = await apiAction("approvePR", {
                     prRowNumber: parseInt(refPrRow), prUid: prUid, prId: prId, vendor: vendor, poNumber: "", warehouse: warehouse, expectedDate: expectedDate, remark: remark, items: items
                 });
-                if (res && res.success) {
+                if (res && res.success && isCurrentPoReadOwner(submitOwner)) {
                     closeCreatePoModal();
                 }
             } else {
                 res = await apiAction("createPO", { vendor, poNumber: "", warehouse, expectedDate, remark, items });
-                if (res && res.success) {
+                if (res && res.success && isCurrentPoReadOwner(submitOwner)) {
                     const directRef = res.directBillRefUid || ("DIRECT-" + Date.now());
                     const todayStr = new Date().toLocaleDateString("en-GB");
                     const newPendingItems = items.map((it, idx) => ({
@@ -2425,8 +2695,10 @@
             }
         } finally {
             isSubmittingDirectPO = false;
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalBtnText;
+            if (isCurrentPoReadOwner(submitOwner)) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
+            }
         }
     }
 
@@ -2503,7 +2775,7 @@
             // เช็คว่าบิลนี้มาจากปุ่ม Direct PO หรือเปล่า
             const isDirectPO = isDirectBillRefUid(group.refPrUid) || group.items.some(i => isDirectBillRefUid(i.refPrUid) || (i.remark && i.remark.toString().includes('Direct PO')));
             let directBadge = isDirectPO ? `<span class="text-[9px] font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded shadow-sm border border-purple-200 ml-1">⚡ Direct PO</span>` : '';
-            const expectedBadge = group.expectedDate ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold whitespace-nowrap flex-shrink-0 border border-emerald-100">ยืนยันส่ง: ${esc(group.expectedDate)}</span>` : '';
+            const expectedBadge = group.expectedDate ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold whitespace-nowrap flex-shrink-0 border border-emerald-100">ยืนยันส่ง: ${esc(displayPoDate(group.expectedDate))}</span>` : '';
 
             // ปรับสีพื้นหลังการ์ดตาม CI
             let cardClass = "glass-card p-4 flex flex-col h-full relative border-l-4 border-l-gray-300 bg-white transition hover:shadow-md cursor-default";
@@ -2551,8 +2823,8 @@
                 legacyBill: !group.refPrUid
             }));
             const deleteButtonHtml = `
-                        <button onclick='deletePO(${deleteRequest})' class="btn-outline-action btn-delete delete-lifecycle-active">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i> ลบทั้งบิล
+                        <button type="button" onclick='openPoBillDetail(${deleteRequest})' class="btn-outline-action delete-lifecycle-active">
+                            <i data-lucide="file-text" class="w-3 h-3" aria-hidden="true"></i> ดูรายละเอียด
                         </button>`;
             const cancelRequest = esc(JSON.stringify({
                 poId: group.poId || group.items?.[0]?.poId || '',
@@ -2582,7 +2854,7 @@
                         ${itemsHtml}
                     </div>
                     <div class="flex flex-col items-end gap-1">
-                        <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-medium whitespace-nowrap flex-shrink-0 border border-gray-200">สั่ง: ${esc(group.poDate)}</span>
+                        <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-medium whitespace-nowrap flex-shrink-0 border border-gray-200">สั่ง: ${esc(displayPoDate(group.poDate))}</span>
                         ${expectedBadge}
                     </div>
                 </div>
@@ -2606,6 +2878,38 @@
         lucide.createIcons({ root: container });
     }
 
+    var poBillDetailReturnFocus = null;
+    function openPoBillDetail(request) {
+        const uids = normalizeDeletePoUids(request?.poUids);
+        const allRows = [...(appData.pendingPOs || []), ...(appData.grCompleted || []), ...(appData.apvList || [])];
+        const rows = uids.map(uid => allRows.find(row => String(row.uid || '').trim() === uid)).filter(Boolean);
+        if (!uids.length || rows.length !== uids.length) return showNotification('ข้อมูลบิลไม่เป็นปัจจุบัน กรุณารีเฟรชก่อนเปิดรายละเอียด', 'error');
+        poBillDetailReturnFocus = document.activeElement;
+        document.getElementById('po-bill-detail-title').innerText = `รายละเอียดบิลสั่งซื้อ (${rows[0].poNumber || 'ไม่มีเลข'})`;
+        document.getElementById('po-bill-detail-content').innerHTML = `<p>${esc(rows[0].vendor || '-')} · ${esc(rows[0].warehouse || '-')}</p><ol>${rows.map(row => `<li class="py-2 border-b border-gray-200"><strong>${esc(row.product || '-')}</strong><span> ${esc(row.quantity ?? row.poQty ?? 0)} ${esc(row.unit || '')}</span></li>`).join('')}</ol>`;
+        const button = document.getElementById('po-bill-detail-delete');
+        button.classList.toggle('hidden', !can('createPO'));
+        const original = { ...request, poUids: [...uids] };
+        button.onclick = () => deletePO(original);
+        const modal = document.getElementById('po-bill-detail-modal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        document.getElementById('po-bill-detail-close').focus?.();
+    }
+    function closePoBillDetail() {
+        const modal = document.getElementById('po-bill-detail-modal');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        if (poBillDetailReturnFocus?.isConnected !== false) poBillDetailReturnFocus?.focus?.();
+        poBillDetailReturnFocus = null;
+    }
+    document.addEventListener('keydown', event => {
+        const modal = document.getElementById('po-bill-detail-modal');
+        if (event.defaultPrevented || !modal || modal.classList.contains('hidden') || !document.getElementById('custom-confirm-modal').classList.contains('hidden')) return;
+        if (event.key === 'Escape') { event.preventDefault(); closePoBillDetail(); return; }
+        if (event.key !== 'Tab') return;
+        const buttons = Array.from(modal.querySelectorAll('button')).filter(button => !button.disabled && !button.classList.contains('hidden'));
+        const next = event.shiftKey ? buttons[buttons.length - 1] : buttons[0];
+        if (buttons.length && document.activeElement === (event.shiftKey ? buttons[0] : buttons[buttons.length - 1])) { event.preventDefault(); next.focus(); }
+    });
     function deletePO(request) {
         if (!can('createPO')) { showNotification('ไม่มีสิทธิ์ลบบิลสั่งซื้อ', 'error'); return; }
         if (deletePO.inFlight) return;
@@ -2623,7 +2927,8 @@
             if (deletePO.inFlight) return;
             deletePO.inFlight = true;
             try {
-                await apiAction('deletePO', { poId, poUids, refPrUid, expectedItemCount, legacyBill });
+                const result = await apiAction('deletePO', { poId, poUids, refPrUid, expectedItemCount, legacyBill });
+                if (result && result.success !== false && result.status !== 'error') closePoBillDetail();
             } finally {
                 deletePO.inFlight = false;
             }
@@ -2918,8 +3223,8 @@
                 legacyBill: group.legacyBill === true
             }));
             const completedDeleteButton = `
-                        <button onclick='deletePO(${completedDeleteRequest})' class="btn-outline-action btn-delete delete-lifecycle-completed bg-white">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i> ลบทั้งบิล
+                        <button type="button" onclick='openPoBillDetail(${completedDeleteRequest})' class="btn-outline-action delete-lifecycle-completed bg-white">
+                            <i data-lucide="file-text" class="w-3 h-3" aria-hidden="true"></i> ดูรายละเอียด
                         </button>`;
 
             let html = `
@@ -2978,7 +3283,7 @@
                             </div>
                             <div class="text-right">
                                 <span class="text-[11px] font-bold text-gray-400 block mb-0.5">กำหนดส่ง</span>
-                                <span class="text-xs text-gray-600 font-medium">${esc(item.expectedDate || '-')}</span>
+                                <span class="text-xs text-gray-600 font-medium">${esc(displayPoDate(item.expectedDate))}</span>
                             </div>
                         </div>
 
@@ -3202,8 +3507,8 @@
                 legacyBill: apv.legacyBill === true
             }));
             const apvDeleteButton = `
-                    <button onclick='deletePO(${apvDeleteRequest})' class="btn-outline-action btn-delete delete-lifecycle-apv whitespace-nowrap w-full md:w-auto justify-center">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i> ลบทั้งบิล
+                    <button type="button" onclick='openPoBillDetail(${apvDeleteRequest})' class="btn-outline-action delete-lifecycle-apv whitespace-nowrap w-full md:w-auto justify-center">
+                        <i data-lucide="file-text" class="w-4 h-4" aria-hidden="true"></i> ดูรายละเอียด
                     </button>`;
             card.innerHTML = `
                 <div>

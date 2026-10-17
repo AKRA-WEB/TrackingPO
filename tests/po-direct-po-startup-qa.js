@@ -13,7 +13,8 @@ function extractScript(index) {
   return matches[index].replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
 }
 
-const mainScriptCode = extractScript(2);
+const mainScriptCode = [...poHtmlSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).find(source=>source.includes('function decodeJwtPayload('));
+assert.ok(mainScriptCode, 'Actual PO application script must be selected by its function identity');
 
 // Test 1: Verify UTF-8 Thai JWT decoding and padding resilience
 console.log('Test 1: Testing decodeJwtPayload resilience with Thai UTF-8 and base64 padding...');
@@ -155,6 +156,7 @@ console.log('\nTest 3: Testing openPurchasingForm() DOM interaction for Direct P
       tagName: tag.toUpperCase(),
       className: '',
       innerHTML: '',
+      dataset: {},
       appendChild: () => {},
       querySelector: () => ({ addEventListener: () => {} }),
       closest: () => null
@@ -165,6 +167,7 @@ console.log('\nTest 3: Testing openPurchasingForm() DOM interaction for Direct P
   const sandbox = {
     document: documentMock,
     window: {
+      addEventListener() {},
       location: { search: '?sso=mock-token' },
       appSession: {
         id: 'usr-purchaser',

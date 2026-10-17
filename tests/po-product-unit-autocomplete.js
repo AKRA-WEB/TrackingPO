@@ -66,6 +66,7 @@ async function verifyFrontendUnitSearchAndSuggestion() {
     window: {
       location: { href: 'https://akra-web.github.io/TrackingPO/', pathname: '/TrackingPO/', search: '' },
       history: { replaceState() {} },
+      addEventListener() {},
       self: {},
       top: {},
       AkraSupabasePO: fallbackClient
@@ -84,7 +85,9 @@ async function verifyFrontendUnitSearchAndSuggestion() {
     AkraSupabasePO: fallbackClient
   });
 
-  vm.runInContext(inlineScripts[2][1], context);
+  const appScript = inlineScripts.find(script => script[1].includes('function setupProductAutocompleteForPO('));
+  assert.ok(appScript, 'actual PO application script must exist');
+  vm.runInContext(appScript[1], context);
 
   const suggestionBox = createElement('ul');
   suggestionBox.classList.add('hidden');

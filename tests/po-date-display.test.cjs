@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+const html = fs.readFileSync(process.env.PO_TEST_BASELINE_HTML || path.join(__dirname,'..','index.html'),'utf8');
+const source = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).find(s=>s.includes('function toDateInputValue'));
+const document = {getElementById:()=>null,addEventListener(){},querySelectorAll:()=>[]};
+const context = vm.createContext({document, window:{location:{search:''},addEventListener(){}},console,URLSearchParams,Intl,Date,setTimeout(){},setInterval(){},clearTimeout(){}});
+vm.runInContext(source,context);
+assert.equal(typeof context.displayPoDate,'function','date-only display helper must exist');
+for(const value of ['2026-10-12','12/10/2026','12/10/2569']) assert.equal(context.displayPoDate(value),'12 ต.ค. 2569');
+assert.equal(context.displayPoDate('2024-02-29'),'29 ก.พ. 2567');
+assert.equal(context.displayPoDate('2569-10-12'),'12 ต.ค. 3112','ISO date-only API values remain Gregorian, rather than being guessed as Buddhist years');
+assert.equal(context.displayPoDate('2026-02-29'),'2026-02-29','invalid date cannot silently roll into March');
+assert.equal(context.displayPoDate('31/02/2026'),'31/02/2026');
+assert.equal(context.displayPoDate('G2C'),'G2C','non-date source text is preserved');
+assert.equal(context.displayPoDate('2026-10-12T23:00:00Z'),'2026-10-12T23:00:00Z','timestamp interpretation is outside date-only scope');
+assert.equal(context.displayPoDate(''),'-');
+assert.equal(context.toDateInputValue('12/10/2026'),'2026-10-12','native input conversion remains Gregorian');
+console.log('PASS PO date-only BE display: ISO/legacy/BE, leap/invalid/empty/timestamp preservation and unchanged native input conversion');

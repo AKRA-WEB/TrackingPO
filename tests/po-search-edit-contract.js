@@ -55,6 +55,7 @@ const mockDocument = {
 
 const context = vm.createContext({
   window: {
+    addEventListener() {},
     location: { href: 'https://akra-web.github.io/TrackingPO/', pathname: '/TrackingPO/', search: '' },
     history: { replaceState: () => {} },
     self: {},
@@ -73,7 +74,8 @@ const context = vm.createContext({
   lucide: { createIcons: () => {} }
 });
 
-const scriptContent = inlineScripts[2][1];
+const scriptContent = inlineScripts.map(match=>match[1]).find(source=>source.includes('function groupPOData('));
+assert.ok(scriptContent, 'Actual PO application script must contain groupPOData');
 vm.runInContext(scriptContent, context);
 
 // Setup mock PO test data with 3 distinct bills

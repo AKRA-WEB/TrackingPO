@@ -2,9 +2,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {backendPath} = require('./helpers/backend-source.cjs');
 
 const poHtmlSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const poApiSource = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', 'po-api', 'index.ts'), 'utf8');
+const poApiSource = fs.readFileSync(backendPath('supabase', 'functions', 'po-api', 'index.ts'), 'utf8');
 
 console.log('=== Running PO Frontend & Payload Executable Contract Tests ===\n');
 
@@ -112,6 +113,8 @@ function createMockEnvironment() {
         },
         children: [],
         dataset: {},
+        focus() {},
+        remove() {},
         appendChild(child) {
           this.children.push(child);
           child.parentElement = this;
@@ -157,6 +160,7 @@ function createMockEnvironment() {
         tagName: tag.toUpperCase(),
         className: '',
         value: '',
+        dataset: {},
         _innerHTML: '',
         get innerHTML() { return this._innerHTML; },
         set innerHTML(val) {
@@ -204,6 +208,7 @@ function createMockEnvironment() {
     window: {
       location: { search: '?sso=mock-token' },
       appSession: {
+        id: 'fixture-user', token: 'mock-jwt-token-12345',
         roles: ['ADMIN'],
         perms: { 'app-po': ['approvePR', 'closePO', 'deletePO', 'createPO', 'updatePO', 'read'] }
       },
@@ -296,7 +301,7 @@ async function runTests() {
   {
     const env = createMockEnvironment();
 
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
 
     const vmContext = vm.createContext(env);
@@ -360,7 +365,7 @@ async function runTests() {
   console.log('\nTest 5: Executing Match groupGRData, addExtraGRItem, QuickFill, and confirmClosePO...');
   {
     const env = createMockEnvironment();
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
 
     const vmContext = vm.createContext(env);
@@ -488,7 +493,7 @@ async function runTests() {
   console.log('\nTest 6: Executing deletePO action across lifecycles...');
   {
     const env = createMockEnvironment();
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
 
     const vmContext = vm.createContext(env);
@@ -573,7 +578,7 @@ async function runTests() {
   console.log('\nTest 7: Testing readApiCall response shape compatibility...');
   {
     const env = createMockEnvironment();
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
 
     const vmContext = vm.createContext(env);
@@ -625,7 +630,7 @@ async function runTests() {
   console.log('\nTest 8: Testing multi-PO grouping isolation...');
   {
     const env = createMockEnvironment();
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
     const vmContext = vm.createContext(env);
     vm.runInContext(scriptContent, vmContext);
@@ -652,7 +657,7 @@ async function runTests() {
   console.log('\nTest 9: Testing delivery-insight UI contract...');
   {
     const env = createMockEnvironment();
-    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)[2];
+    const scriptMatch = poHtmlSource.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi).find(tag => /function rejectPR\(/.test(tag));
     const scriptContent = scriptMatch.replace(/<script\b[^>]*>/i, '').replace(/<\/script>/i, '');
     const vmContext = vm.createContext(env);
     vm.runInContext(scriptContent, vmContext);

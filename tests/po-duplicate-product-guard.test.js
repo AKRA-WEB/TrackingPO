@@ -64,6 +64,7 @@ function makeRow({ product, sku, quantity = '1', unit = 'ชิ้น' }) {
 
 const context = vm.createContext({
   window: {
+    addEventListener() {},
     location: { href: 'https://akra-web.github.io/TrackingPO/', pathname: '/TrackingPO/', search: '' },
     history: { replaceState() {} },
     self: {},

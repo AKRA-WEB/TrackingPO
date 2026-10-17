@@ -491,7 +491,7 @@
                 clearTimeout(timeoutId);
             }
             if (!shell && stamp !== sessionStamp()) throw new Error('session_changed');
-            if (!response.ok || result.valid !== true || !result.user?.id) throw new Error(result.reason || 'invalid_session');
+            if (!response.ok || result.valid !== true || !result.user?.id) throw Object.assign(new Error(result.reason || 'invalid_session'), { reason: result.reason || '', status: response.status });
             return result.user;
         },
         home: fallback => { if (shell) send('home'); else window.location.assign(fallback); },

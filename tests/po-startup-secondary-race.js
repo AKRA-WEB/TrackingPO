@@ -13,6 +13,10 @@ assert(start >= 0 && end > start, 'loadInitialData must exist in index.html');
 assert(matchStart >= 0 && matchEnd > matchStart, 'ensureMatchLoaded must exist in index.html');
 const functionSource = html.slice(start, end);
 const ensureMatchSource = html.slice(matchStart, matchEnd);
+const regionStart = html.indexOf('    var poRegionReads');
+const regionEnd = html.indexOf('    function showDataLoadFailure(', regionStart);
+assert(regionStart >= 0 && regionEnd > regionStart, 'region read helpers must exist');
+const regionSource = html.slice(regionStart, regionEnd);
 
 function deferred() {
   let resolve;
@@ -23,6 +27,9 @@ function deferred() {
 async function runScenario(isManualRefresh) {
   const renderStates = [];
   const context = vm.createContext({ console });
+  context.document={getElementById:()=>null};
+  context.window={appSession:{token:'fictional-active-session'}};
+  context.getSessionToken=()=>context.window.appSession.token;
   vm.runInContext(`
     var appData = {
       prList: [], pendingPOs: [], vendors: [], products: [],
@@ -50,6 +57,7 @@ async function runScenario(isManualRefresh) {
     async function readApiCall() {
       return { success: true, prList: [], pendingPOs: [], vendors: [] };
     }
+    ${regionSource}
     ${functionSource}
   `, context);
 
@@ -61,8 +69,11 @@ async function runScenario(isManualRefresh) {
 async function runSecondaryInvalidationRace() {
   const match = deferred();
   const context = vm.createContext({ console, matchPromise: match.promise });
+  context.document={getElementById:()=>null};
   vm.runInContext(`
     var appData = { prList: [], pendingPOs: [], vendors: [], products: [], grCompleted: [], apvList: [] };
+    var window = { appSession: { token: 'fictional-secondary-session' } };
+    function getSessionToken() { return 'fictional-secondary-session'; }
     var poMatchLoaded = false;
     var poApvLoaded = false;
     var poProductsLoaded = true;
@@ -75,7 +86,7 @@ async function runSecondaryInvalidationRace() {
     const PO_PRODUCTS_CACHE_TTL = 1;
     const PERF_MODE = false;
     const elements = new Map();
-    var document = { getElementById(id) { if (!elements.has(id)) elements.set(id, { innerHTML: '', innerText: '' }); return elements.get(id); } };
+    var document = { getElementById(id) { if (!elements.has(id)) elements.set(id, { innerHTML: '', innerText: '', classList:{add(){},remove(){}} }); return elements.get(id); } };
     var lucide = { createIcons() {} };
     function getCache() { return null; }
     function setCache() {}
@@ -90,6 +101,7 @@ async function runSecondaryInvalidationRace() {
       if (data && data.includeMatch === true) return matchPromise;
       return { success: true, prList: [], pendingPOs: [], vendors: [] };
     }
+    ${regionSource}
     ${ensureMatchSource}
     ${functionSource}
   `, context);
@@ -105,6 +117,9 @@ async function runActiveLatestWinsRace() {
   const startup = deferred();
   const manual = deferred();
   const context = vm.createContext({ console, activePromises: [startup.promise, manual.promise] });
+  context.document={getElementById:()=>null};
+  context.window={appSession:{token:'fictional-active-session'}};
+  context.getSessionToken=()=>context.window.appSession.token;
   vm.runInContext(`
     var appData = { prList: [], pendingPOs: [], vendors: [], products: [], grCompleted: [], apvList: [] };
     var poMatchLoaded = false;
@@ -124,6 +139,7 @@ async function runActiveLatestWinsRace() {
     function scheduleProductsBackground() {}
     function processDataAndRender() {}
     async function readApiCall() { return activePromises.shift(); }
+    ${regionSource}
     ${functionSource}
   `, context);
 

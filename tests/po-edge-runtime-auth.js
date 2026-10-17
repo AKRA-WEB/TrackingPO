@@ -2,43 +2,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {backendPath} = require('./helpers/backend-source.cjs');
+const {stripTypeScriptTypes} = require('node:module');
 
 console.log('=== Running Executable PO Edge Runtime Auth & Insights Tests ===\n');
 
-const sharedJwtFullSource = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', '_shared', 'main-jwt.ts'), 'utf8')
+const sharedJwtFullSource = fs.readFileSync(backendPath('supabase', 'functions', '_shared', 'main-jwt.ts'), 'utf8')
   .replace(/^export\s+/gm, '');
 const sharedJwtSource = sharedJwtFullSource.slice(0, sharedJwtFullSource.indexOf('async function verifyMainJwt'));
-const poApiSource = `${sharedJwtSource}\n${fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'supabase', 'functions', 'po-api', 'index.ts'), 'utf8')}`;
+const poApiSource = `${sharedJwtSource}\n${fs.readFileSync(backendPath('supabase', 'functions', 'po-api', 'index.ts'), 'utf8')}`;
 
-// Strip TypeScript types to execute in Node VM
-function transpileTsToJs(tsCode) {
-  return tsCode
-    .replace(/\r\n/g, '\n')
-    .replace(/^import\b.*$/gm, '// $&')
-    .replace(/^type\s+[A-Za-z0-9_]+\s*=.*$/gm, '// $&')
-    .replace(/declare\s+const\s+Deno[\s\S]*?;\n\};/g, '// Deno')
-    .replace(/new\s+Map<[^(\n]+>\(\)/g, 'new Map()')
-    .replace(/new\s+Set<[^(\n]+>\(\)/g, 'new Set()')
-    .replace(/\bas\s+[A-Za-z0-9_<>\[\]]+/g, '')
-    .replace(/interface\s+[A-Za-z0-9_]+\s*\{[\s\S]*?\}/g, '')
-    .replace(/\):\s*Promise<\{[\s\S]*?\}\s*>\s*\{/g, ') {')
-    .replace(/\):\s*\{[\s\S]*?\}\s*\{/g, ') {')
-    .replace(/\):\s*[A-Za-z0-9_<>\[\],| ]+\s*\{/g, ') {')
-    .replace(/(function\s+[A-Za-z0-9_$]+\s*)\(([^)]*)\)/g, (m, fn, params) => {
-      const cleaned = params.split(',').map(p => p.split(':')[0].trim()).join(', ');
-      return fn + '(' + cleaned + ')';
-    })
-    .replace(/\(([A-Za-z0-9_$,\s:]+)\)\s*=>/g, (m, params) => {
-      const cleaned = params.split(',').map(p => p.split(':')[0].trim()).join(', ');
-      return '(' + cleaned + ') =>';
-    })
-    .replace(/\b(const|let|var)\s+([A-Za-z0-9_$]+)\s*:\s*[A-Za-z0-9_<>\[\],| ]+\s*=/g, '$1 $2 =')
-    .replace(/catch\s*\(\s*([A-Za-z0-9_$]+)\s*:\s*[A-Za-z0-9_]+\s*\)/g, 'catch ($1)')
-    .replace(/\)!([.;,\s\)])/g, ')$1')
-    .replace(/([A-Za-z0-9_$]+)!([.;,\s\)])/g, '$1$2');
-}
-
-const jsCode = transpileTsToJs(poApiSource);
+// Strip types from the complete shared/handler fixture with Node's parser.
+const jsCode = stripTypeScriptTypes(poApiSource.replace(/^import\b.*$/gm, ''));
 
 function createEdgeRuntime(mockDbState = {}) {
   const dbCalls = {

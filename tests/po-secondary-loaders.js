@@ -14,6 +14,10 @@ function extract(name) {
 
 const matchSource = extract('ensureMatchLoaded');
 const apvSource = extract('ensureApvLoaded');
+const regionStart = html.indexOf('    var poRegionReads');
+const regionEnd = html.indexOf('    function showDataLoadFailure(', regionStart);
+assert(regionStart >= 0 && regionEnd > regionStart, 'region read helpers must exist');
+const regionSource = html.slice(regionStart, regionEnd);
 const requests = [];
 const elements = new Map();
 const element = id => {
@@ -25,6 +29,9 @@ const context = vm.createContext({
   poMatchLoaded: false,
   poApvLoaded: false,
   poSecondaryDataGeneration: 0,
+  poActiveLoadGeneration: 0,
+  window: { appSession: { token: 'fictional-secondary-session' } },
+  getSessionToken: () => 'fictional-secondary-session',
   appData: { grCompleted: [], apvList: [] },
   document: { getElementById: element },
   readApiCall: async (action, options) => {
@@ -41,7 +48,7 @@ const context = vm.createContext({
   lucide: { createIcons: () => {} }
 });
 
-vm.runInContext(`${matchSource}\n${apvSource}`, context);
+vm.runInContext(`${regionSource}\n${matchSource}\n${apvSource}`, context);
 
 (async () => {
   await vm.runInContext('ensureMatchLoaded()', context);
