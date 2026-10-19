@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="assets/bm-tokens.css?v=20261013.03">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase-po-client.js?v=20261017.03" defer></script>
+  <script src="js/supabase-po-client.js?v=20261019.01" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -965,6 +965,7 @@
           <form id="form-create-po" onsubmit="submitDirectPO(event)" novalidate>
               <input type="hidden" id="c-ref-pr-row" value="">
               <div id="po-create-products-error" role="alert" class="po-read-notice hidden"></div>
+              <p id="po-edit-locked-context" class="hidden text-sm text-amber-800 mb-4" role="status"></p>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div class="relative">
@@ -997,7 +998,7 @@
                   <h4 class="text-sm font-bold text-gray-800 p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">รายการสินค้า</h4>
                   <div class="p-3 sm:p-4">
                       <div id="create-po-items-container" class="space-y-3 max-h-[400px] overflow-y-auto pr-0 sm:pr-2 pb-24 sm:pb-32"></div>
-                      <button type="button" onclick="addCreatePoItemRow()" class="mt-4 w-full border-2 border-dashed border-gray-300 text-brand-blue bg-white hover:bg-gray-50 py-3 rounded-lg text-sm font-bold transition flex justify-center items-center gap-1.5">
+                      <button type="button" id="create-po-add-item" onclick="addCreatePoItemRow()" class="mt-4 w-full border-2 border-dashed border-gray-300 text-brand-blue bg-white hover:bg-gray-50 py-3 rounded-lg text-sm font-bold transition flex justify-center items-center gap-1.5">
                           <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มรายการสินค้า
                       </button>
                   </div>
@@ -1043,7 +1044,7 @@
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    const CURRENT_VERSION = "20261017.03";
+    const CURRENT_VERSION = "20261019.01";
     async function checkAppVersion() {
         try {
             const res = await fetch('version.json?t=' + Date.now());
@@ -1801,9 +1802,19 @@
                 showNotification(result.message || 'บันทึก Direct PO เรียบร้อยแล้ว', 'success');
                 loadInitialDataInBackground(true, result?.success === true);
                 return result;
-            } else if (action === "updatePO") {
+            } else if (action === "updatePO" || action === "updateUnreceivedPO") {
+                if (action === "updateUnreceivedPO" && !isCurrentPoUnreceivedEdit()) {
+                    hideDataLoading();
+                    showNotification('ข้อมูลหรือเซสชันเปลี่ยนแล้ว กรุณาเปิดรายการแก้ไขอีกครั้ง', 'warning');
+                    return { success: false, message: 'ข้อมูลหรือเซสชันเปลี่ยนแล้ว กรุณาเปิดรายการแก้ไขอีกครั้ง' };
+                }
                 const updateOwner = capturePoReadOwner();
-                result = await AkraSupabasePO.updatePO({
+                result = action === "updateUnreceivedPO" ? await AkraSupabasePO.updateUnreceivedPO({
+                    poId: payload.poId,
+                    expectedItemCount: payload.expectedItemCount,
+                    items: payload.items.map(it => ({ uid: it.uid, expected: it.expected, sku: it.sku,
+                        product: it.product, quantity: Number(it.quantity), unit: it.unit, remark: it.remark }))
+                }, token) : await AkraSupabasePO.updatePO({
                     poId: payload.poId || '',
                     refPrUid: payload.refPrUid || '',
                     vendor: payload.vendor,
@@ -1820,6 +1831,7 @@
                         remark: it.remark || ''
                     }))
                 }, token);
+                if (action === "updateUnreceivedPO" && result?.success === true) poUnreceivedEdit = null;
                 const readback = loadInitialDataInBackground(true, result?.success === true);
                 const readbackGeneration = poActiveLoadGeneration;
                 const reloaded = await readback;
@@ -2377,11 +2389,12 @@
                         const qtyEl = row.querySelector(".c-qty");
                         if (qtyEl) qtyEl.focus();
                     }
-                    if (vendorLabel) {
+                    const partialEdit = document.getElementById('form-create-po')?.dataset.mode === 'edit-unreceived';
+                    if (vendorLabel && !partialEdit) {
                         const vendorInput = document.getElementById("create-po-vendor");
                         if (vendorInput) vendorInput.value = vendorLabel;
                     }
-                    if (whLabel) {
+                    if (whLabel && !partialEdit) {
                         const whSelect = document.getElementById("create-po-warehouse");
                         if (whSelect && !whSelect.value) {
                             whSelect.value = whLabel;
@@ -2436,6 +2449,7 @@
     function approvePRToPOForm(rowNumber, prUid, prId) {
         const pr = appData.prList.find(p => (prId && p.prId === prId) || p.uid === prUid || p.rowNumber === rowNumber);
         if(!pr) return;
+        setPoFormPartialMode(false);
 
         const vendorInput = document.getElementById('create-po-vendor');
         vendorInput.value = "";
@@ -2472,7 +2486,43 @@
         document.getElementById('modal-create-po').classList.add('flex');
     }
 
-    function openEditPOForm(target) {
+    var poUnreceivedEdit = null;
+    function isCurrentPoUnreceivedEdit() {
+        return !!poUnreceivedEdit && isCurrentPoReadOwner(poUnreceivedEdit.owner)
+            && poUnreceivedEdit.generation === poActiveLoadGeneration && !poRegionReads.active.failure;
+    }
+
+    function setPoFormPartialMode(partial) {
+        ['create-po-vendor', 'create-po-warehouse', 'create-po-expected-date', 'create-po-remark', 'create-po-add-item']
+            .forEach(id => { document.getElementById(id).disabled = partial; });
+        document.getElementById('vendor-suggestions').classList.add('hidden');
+        const context = document.getElementById('po-edit-locked-context');
+        if (partial) context.classList.remove('hidden');
+        else {
+            context.classList.add('hidden');
+            poUnreceivedEdit = null;
+            const form = document.getElementById('form-create-po');
+            if (form.dataset.mode === 'edit-unreceived') delete form.dataset.mode;
+        }
+    }
+
+    function poBillEditBlocked(group) {
+        return group.items.some(item => item.status === 'Draft GR' || item.status === 'Pending Review'
+            || item.billReceivingStarted === true || item.billHasCompletedSibling === true);
+    }
+
+    function editableUnreceivedPoItems(group) {
+        return group.items.filter(item => item.editableUnreceived === true && item.editSnapshot
+            && typeof item.editSnapshot === 'object' && !Array.isArray(item.editSnapshot)
+            && ['status', 'sku', 'product', 'quantity', 'unit', 'expectedDate', 'remark']
+                .every(key => Object.prototype.hasOwnProperty.call(item.editSnapshot, key)));
+    }
+
+    function openEditUnreceivedPOForm(target) {
+        openEditPOForm(target, true);
+    }
+
+    function openEditPOForm(target, partial = false) {
         let group = null;
         if (typeof target === 'number') {
             group = groupedPOs[target];
@@ -2489,10 +2539,32 @@
             group = target;
         }
         if(!group) return;
+        const editableItems = partial ? editableUnreceivedPoItems(group) : group.items;
+        if (partial) {
+            if (!can('createPO')) return showNotification('ไม่มีสิทธิ์ดำเนินการนี้', 'error');
+            if (!poBillEditBlocked(group) || !editableItems.length || !group.poId
+                || !Number.isInteger(group.poItemCount) || group.poItemCount < editableItems.length
+                || poRegionReads.active.failure) return showNotification('กรุณาโหลดข้อมูลล่าสุดก่อนแก้ไขรายการที่ยังไม่รับ', 'warning');
+        } else if (poBillEditBlocked(group)) {
+            return showNotification('บิลเริ่มรับสินค้าแล้ว แก้ไขได้เฉพาะรายการที่ยังไม่เคยรับ', 'warning');
+        }
+        setPoFormPartialMode(partial);
+        const form = document.getElementById('form-create-po');
+        form.dataset.mode = partial ? 'edit-unreceived' : 'edit';
+        if (partial) {
+            poUnreceivedEdit = { poId: group.poId, expectedItemCount: group.poItemCount,
+                items: editableItems.map(item => ({ uid: item.uid, expected: { ...item.editSnapshot } })),
+                owner: capturePoReadOwner(), generation: poActiveLoadGeneration };
+        }
 
         // เปลี่ยนหัวข้อฟอร์ม
         document.getElementById('modal-create-po-title').innerText = `แก้ไขบิลสั่งซื้อ (${group.poNumber || 'ไม่มีเลข'})`;
         document.getElementById('modal-create-po-subtitle').innerText = `แก้ไขข้อมูลที่ต้องการแล้วกด "บันทึกการแก้ไข"`;
+        if (partial) {
+            document.getElementById('modal-create-po-title').innerText = `แก้ไขรายการที่ยังไม่รับ (${group.poNumber || 'ไม่มีเลข'})`;
+            document.getElementById('modal-create-po-subtitle').innerText = `แก้ไขได้ ${editableItems.length} รายการ · ล็อกอีก ${group.poItemCount - editableItems.length} รายการ`;
+            document.getElementById('po-edit-locked-context').innerText = `วันที่สั่งซื้อ: ${displayPoDate(group.poDate) || '-'} · ข้อมูลทั้งบิลและรายการที่เริ่มรับแล้วถูกล็อก เพิ่มหรือลบรายการไม่ได้ วันที่ส่งของแต่ละรายการคงเดิม`;
+        }
 
         // เติมข้อมูลส่วนหัว
         document.getElementById('create-po-vendor').value = group.vendor;
@@ -2504,17 +2576,15 @@
         // เติมข้อมูลรายการสินค้า
         const container = document.getElementById('create-po-items-container');
         container.innerHTML = '';
-        group.items.forEach(item => {
+        editableItems.forEach(item => {
             const rawItemRemark = item.itemRemark || (item.poRemark && item.poRemark !== group.billRemark ? item.poRemark : '');
-            const itemRemark = cleanDirectPoRemark(rawItemRemark);
+            const itemRemark = partial ? (item.editSnapshot.remark || '') : cleanDirectPoRemark(rawItemRemark);
             addCreatePoItemRow(item.product, item.quantity, item.unit, item.sku, itemRemark, item.uid || item.id || '');
         });
 
         // เก็บ UID เก่าไว้ในฟอร์มเพื่อส่งไปลบ
         const poUids = group.items.map(i => i.uid);
-        const form = document.getElementById('form-create-po');
         const refPrUid = usableBillRefUid(group.refPrUid || group.items[0].refPrUid);
-        form.dataset.mode = 'edit';
         form.dataset.poId = group.poId || group.items[0].poId || '';
         form.dataset.oldUids = JSON.stringify(poUids);
         form.dataset.refPrUid = refPrUid;
@@ -2530,6 +2600,7 @@
 
     function openPurchasingForm() {
         if (!can('createPO')) { showNotification('ไม่มีสิทธิ์สร้างบิลสั่งซื้อ', 'error'); return; }
+        setPoFormPartialMode(false);
         document.getElementById('c-ref-pr-row').value = "";
         document.getElementById('modal-create-po-title').innerText = `สร้างบิลใหม่ (Direct PO)`;
         document.getElementById('modal-create-po-subtitle').innerText = `โปรดระบุข้อมูลให้ครบถ้วนก่อนบันทึก`;
@@ -2595,6 +2666,9 @@
     }
 
     function addCreatePoItemRow(product = '', qty = '', unit = '', sku = '', remark = '', uid = '') {
+        const partial = document.getElementById('form-create-po').dataset.mode === 'edit-unreceived';
+        const originalItem = partial ? poUnreceivedEdit?.items.find(item => item.uid === uid) : null;
+        if (partial && !originalItem) return;
         const container = document.getElementById('create-po-items-container');
         const div = document.createElement('div');
         div.dataset.uid = uid;
@@ -2614,9 +2688,9 @@
                 </div>
                 <div class="min-w-0 sm:w-20 sm:border-l sm:border-gray-200">
                     <label for="create-po-unit-${itemRowId}" class="block sm:sr-only text-xs font-semibold text-gray-600 mb-1.5">หน่วย</label>
-                    <input type="text" id="create-po-unit-${itemRowId}" class="w-full min-h-[48px] px-2 py-3 text-base font-medium text-gray-600 bg-white outline-none text-center rounded-lg border border-gray-300 c-unit sm:min-h-0 sm:py-2.5 sm:text-sm sm:rounded-none sm:border-0 sm:bg-gray-50" placeholder="หน่วย" value="${esc(unit)}" readonly tabindex="-1">
+                    <input type="text" id="create-po-unit-${itemRowId}" class="w-full min-h-[48px] px-2 py-3 text-base font-medium text-gray-600 bg-white outline-none text-center rounded-lg border border-gray-300 c-unit sm:min-h-0 sm:py-2.5 sm:text-sm sm:rounded-none sm:border-0 sm:bg-gray-50" placeholder="หน่วย" value="${esc(unit)}" ${partial ? '' : 'readonly tabindex="-1"'}>
                 </div>
-                <button type="button" onclick="this.closest('.create-po-item-row').remove()" aria-label="ลบรายการสินค้า" class="self-end min-h-[48px] min-w-[48px] flex items-center justify-center text-red-500 hover:text-red-700 px-3 py-2.5 font-bold transition rounded-lg border border-red-100 bg-red-50 sm:self-auto sm:min-h-0 sm:min-w-0 sm:rounded-none sm:rounded-tr-lg sm:border-0 sm:border-l sm:border-gray-200 sm:bg-transparent">
+                <button type="button" ${partial ? 'disabled' : ''} onclick="if(document.getElementById('form-create-po').dataset.mode !== 'edit-unreceived') this.closest('.create-po-item-row').remove()" aria-label="ลบรายการสินค้า" class="self-end min-h-[48px] min-w-[48px] flex items-center justify-center text-red-500 hover:text-red-700 px-3 py-2.5 font-bold transition rounded-lg border border-red-100 bg-red-50 sm:self-auto sm:min-h-0 sm:min-w-0 sm:rounded-none sm:rounded-tr-lg sm:border-0 sm:border-l sm:border-gray-200 sm:bg-transparent">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -2624,6 +2698,7 @@
                 <i data-lucide="message-square" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0"></i>
                 <input type="text" id="create-po-item-remark-${itemRowId}" class="w-full text-xs text-gray-700 placeholder-gray-400 bg-transparent border-none outline-none c-item-remark focus:placeholder-gray-300" placeholder="หมายเหตุเฉพาะรายการนี้ (ถ้ามี เช่น สเปก, ล็อต, ของแถม)..." value="${esc(remark)}">
             </div>
+            ${partial ? `<p class="px-3 py-1.5 text-xs text-gray-500">วันที่ส่งรายการ: ${originalItem.expected.expectedDate ? esc(displayPoDate(originalItem.expected.expectedDate)) : 'ไม่ระบุ'} (คงเดิม)</p>` : ''}
         `;
         container.appendChild(div);
         setupProductAutocompleteForPO(div.querySelector('.c-product'));
@@ -2640,8 +2715,10 @@
         const remarkInput = document.getElementById("create-po-remark");
         const remark = remarkInput ? remarkInput.value.trim() : "";
         const form = document.getElementById("form-create-po");
+        const partial = form.dataset.mode === 'edit-unreceived';
+        if (partial && !isCurrentPoUnreceivedEdit()) return showNotification('ข้อมูลหรือเซสชันเปลี่ยนแล้ว กรุณาเปิดรายการแก้ไขอีกครั้ง', 'warning');
 
-        if(!vendor || !warehouse) return showNotification("กรุณาเลือก Vendor และคลังสินค้าให้ครบถ้วน", "warning");
+        if(!partial && (!vendor || !warehouse)) return showNotification("กรุณาเลือก Vendor และคลังสินค้าให้ครบถ้วน", "warning");
 
         const items = [];
         let hasError = false;
@@ -2658,6 +2735,11 @@
         });
 
         if(hasError || items.length === 0) return showNotification("กรุณากรอกข้อมูลสินค้าให้ครบถ้วน", "warning");
+        if (partial) {
+            const expectedUids = new Set(poUnreceivedEdit.items.map(item => item.uid));
+            if (items.length !== expectedUids.size || new Set(items.map(item => item.uid)).size !== items.length
+                || items.some(item => !expectedUids.has(item.uid))) return showNotification('รายการสินค้าเปลี่ยนแล้ว กรุณาเปิดรายการแก้ไขอีกครั้ง', 'warning');
+        }
 
         const duplicateItems = findDuplicateDirectPoItems(items);
         if (duplicateItems.length > 0) {
@@ -2672,7 +2754,7 @@
         const prUid = form.dataset.pruid || form.dataset.prUid;
         const refPrUid = form.dataset.refPrUid || "";
 
-        const needPerm = (form.dataset.mode === "edit") ? "createPO" : (refPrRow ? "approvePR" : "createPO");
+        const needPerm = (form.dataset.mode === "edit" || partial) ? "createPO" : (refPrRow ? "approvePR" : "createPO");
         if (!can(needPerm)) return showNotification("ไม่มีสิทธิ์ดำเนินการนี้", "error");
 
         const submitBtn = document.getElementById("btn-submit-direct-po");
@@ -2684,7 +2766,12 @@
 
         try {
             let res;
-            if (form.dataset.mode === "edit") {
+            if (partial) {
+                res = await apiAction('updateUnreceivedPO', { poId: poUnreceivedEdit.poId,
+                    expectedItemCount: poUnreceivedEdit.expectedItemCount,
+                    items: items.map(item => ({ ...item, expected: poUnreceivedEdit.items.find(original => original.uid === item.uid).expected })) });
+                if (res && res.success && isCurrentPoReadOwner(submitOwner)) closeCreatePoModal();
+            } else if (form.dataset.mode === "edit") {
                 const oldPoUids = JSON.parse(form.dataset.oldUids);
                 const poNumber = form.dataset.poNumber;
                 res = await apiAction("updatePO", { poId: form.dataset.poId || '', oldPoUids, vendor, warehouse, poNumber, expectedDate, remark, items, prUid, refPrUid });
@@ -2811,6 +2898,7 @@
             const receivingStarted = hasDraft || hasPendingReview || hasBillReceivingStarted;
             const editBlocked = receivingStarted || hasCompletedSibling;
             const cancelableUnreceivedItems = group.items.filter(i => i.cancelableUnreceived === true);
+            const editableUnreceivedItems = editableUnreceivedPoItems(group);
 
             // เช็คว่าบิลนี้มาจากปุ่ม Direct PO หรือเปล่า
             const isDirectPO = isDirectBillRefUid(group.refPrUid) || group.items.some(i => isDirectBillRefUid(i.refPrUid) || (i.remark && i.remark.toString().includes('Direct PO')));
@@ -2882,6 +2970,11 @@
                         <button onclick='openEditPOForm(${editRequest})' class="btn-outline-action btn-edit ${editBlocked ? 'hidden' : ''}">
                             <i data-lucide="edit-3" class="w-3 h-3"></i> แก้ไขบิล
                         </button>`;
+            const partialEditButtonHtml = editBlocked && group.poId && editableUnreceivedItems.length > 0
+                && Number.isInteger(group.poItemCount) && group.poItemCount >= editableUnreceivedItems.length ? `
+                        <button onclick='openEditUnreceivedPOForm(${editRequest})' class="btn-outline-action btn-edit">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i> แก้ไขรายการที่ยังไม่รับ
+                        </button>` : '';
 
             card.innerHTML = `
                 ${statusBadgeHtml}
@@ -2907,6 +3000,7 @@
                     </div>
                     <div class="po-card-actions flex gap-2">
                         ${editButtonHtml}
+                        ${partialEditButtonHtml}
                         ${cancelUnreceivedButtonHtml}
                         ${deleteButtonHtml}
                     </div>

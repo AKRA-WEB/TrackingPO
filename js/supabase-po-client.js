@@ -116,6 +116,7 @@
         saveDirectPO: (poData, token) => request('createPO', poData, token),
         createPO: (poData, token) => request('createPO', poData, token),
         updatePO: (poData, token) => request('updatePO', poData, token),
+        updateUnreceivedPO: (poData, token) => request('updateUnreceivedPO', poData, token),
         deleteBill: (payload, token) => request('deleteBill', payload, token),
         deletePO: (payload, token) => request('deleteBill', payload, token),
         cancelUnreceivedPO: (payload, token) => request('cancelUnreceivedPO', payload, token),
